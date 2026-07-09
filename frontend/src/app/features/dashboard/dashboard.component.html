@@ -1,0 +1,67 @@
+<div class="p-8">
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-900">Dashboard</h2>
+    <p class="text-gray-500 mt-1">Welcome to Serenity Suites Hotel Management System</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">Total Rooms</p>
+          <p class="text-3xl font-bold text-serenity-700 mt-1">{{ roomCount }}</p>
+        </div>
+        <span class="text-4xl">🛏️</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">Total Guests</p>
+          <p class="text-3xl font-bold text-green-600 mt-1">{{ guestCount }}</p>
+        </div>
+        <span class="text-4xl">👥</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">Active Bookings</p>
+          <p class="text-3xl font-bold text-purple-600 mt-1">{{ bookingCount }}</p>
+        </div>
+        <span class="text-4xl">📅</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500">API Status</p>
+          <p
+            class="text-lg font-semibold mt-1"
+            [class.text-green-600]="apiStatus === 'OK'"
+            [class.text-red-500]="apiStatus !== 'OK'"
+          >
+            {{ apiStatus }}
+          </p>
+        </div>
+        <span class="text-4xl">🔌</span>
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="text-center text-gray-400 py-12">Loading dashboard data...</div>
+  } @else {
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+      <div class="flex flex-wrap gap-3">
+        <a routerLink="/rooms" class="btn-primary">Manage Rooms</a>
+        <a routerLink="/guests" class="btn-primary">Manage Guests</a>
+        <a routerLink="/bookings" class="btn-primary">View Bookings</a>
+      </div>
+    </div>
+  }
+</div>

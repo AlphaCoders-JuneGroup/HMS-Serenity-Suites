@@ -1,0 +1,39 @@
+<div class="p-8">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Guests</h2>
+      <p class="text-gray-500 mt-1">Manage guest profiles and information</p>
+    </div>
+    <button class="btn-primary">+ Add Guest</button>
+  </div>
+
+  @if (loading) {
+    <div class="text-center text-gray-400 py-12">Loading guests...</div>
+  } @else if (error) {
+    <div class="card text-red-500">{{ error }}</div>
+  } @else if (guests.length === 0) {
+    <div class="card text-center py-12">
+      <p class="text-gray-400 text-lg">No guests found</p>
+      <p class="text-gray-300 text-sm mt-2">Register your first guest to get started</p>
+    </div>
+  } @else {
+    <div class="card overflow-x-auto">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="pb-3 font-semibold text-gray-600">Guest Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (guest of guests; track $index) {
+            <tr class="border-b border-gray-100">
+              <td class="py-3">
+                <pre class="text-xs text-gray-600">{{ guest | json }}</pre>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
