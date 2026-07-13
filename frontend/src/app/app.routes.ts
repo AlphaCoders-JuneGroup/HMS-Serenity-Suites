@@ -14,6 +14,7 @@ import { RegisterComponent } from './features/auth/register/register.component';
 import { UnauthorizedComponent } from './features/auth/unauthorized/unauthorized.component';
 import { UserListComponent } from './features/users/user-list/user-list.component';
 import { UserFormComponent } from './features/users/user-form/user-form.component';
+import { HousekeepingComponent } from './features/housekeeping/housekeeping.component';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 
@@ -137,13 +138,7 @@ export const routes: Routes = [
       {
         path: 'housekeeping',
         canActivate: [roleGuard('Admin', 'Manager', 'Housekeeping Manager')],
-        component: ModulePageComponent,
-        data: {
-          title: 'Housekeeping Management',
-          description: 'Track room cleaning status and housekeeping tasks',
-          icon: '🧹',
-          moduleKey: 'housekeeping',
-        },
+        component: HousekeepingComponent,
       },
 
       // 9. Event Management

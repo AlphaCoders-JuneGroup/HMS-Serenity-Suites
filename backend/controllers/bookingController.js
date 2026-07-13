@@ -325,7 +325,9 @@ exports.updateBooking = async (req, res) => {
       await Room.findByIdAndUpdate(finalRoomId, { status: 'Reserved' });
     } else if (targetStatus === 'Checked-In') {
       await Room.findByIdAndUpdate(finalRoomId, { status: 'Occupied' });
-    } else if (['Checked-Out', 'Cancelled'].includes(targetStatus)) {
+    } else if (targetStatus === 'Checked-Out') {
+      await Room.findByIdAndUpdate(finalRoomId, { status: 'Cleaning' });
+    } else if (targetStatus === 'Cancelled') {
       await Room.findByIdAndUpdate(finalRoomId, { status: 'Available' });
     }
 
