@@ -45,4 +45,14 @@ const bookingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+bookingSchema.pre('validate', function (next) {
+  if (this.checkIn && this.checkOut && this.checkOut <= this.checkIn) {
+    this.invalidate('checkOut', 'Check-out date must be after check-in date');
+  }
+  next();
+});
+
+// Active bookings that block a room
+bookingSchema.index({ room: 1, checkIn: 1, checkOut: 1, status: 1 });
+
 module.exports = mongoose.model('Booking', bookingSchema);

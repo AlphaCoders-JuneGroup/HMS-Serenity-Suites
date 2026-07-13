@@ -3,9 +3,12 @@ const mongoose = require('mongoose');
 
 dns.setDefaultResultOrder('ipv4first');
 
+const DB_NAME = 'serenity_suites';
+
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      dbName: DB_NAME,
       serverSelectionTimeoutMS: 10000,
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);

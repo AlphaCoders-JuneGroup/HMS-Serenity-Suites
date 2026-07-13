@@ -1,26 +1,183 @@
-<div class="p-8">
-  <div class="flex items-center justify-between mb-8">
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-      <h2 class="text-2xl font-bold text-gray-900">Bookings</h2>
-      <p class="text-gray-500 mt-1">Manage reservations and check-ins</p>
+      <h2 class="text-2xl font-bold text-gray-900">Booking Management</h2>
+      <p class="text-gray-500 mt-1">
+        Check availability, register guests, create and manage room reservations
+      </p>
     </div>
-    <button class="btn-primary">+ New Booking</button>
+    @if (canManageBookings) {
+      <a routerLink="/bookings/new" class="btn-primary self-start">+ New Booking</a>
+    } @else {
+      <span class="badge-neutral self-start">View only</span>
+    }
+  </div>
+
+  <!-- Related summary cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-violet-50">📅</div>
+        <div>
+          <p class="text-sm text-gray-500">Total Bookings</p>
+          <p class="text-2xl font-bold text-violet-600">{{ bookings.length }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-amber-50">⏳</div>
+        <div>
+          <p class="text-sm text-gray-500">Pending</p>
+          <p class="text-2xl font-bold text-amber-600">{{ pendingCount }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-serenity-50">✔️</div>
+        <div>
+          <p class="text-sm text-gray-500">Confirmed</p>
+          <p class="text-2xl font-bold text-serenity-700">{{ confirmedCount }}</p>
+          <p class="text-xs text-gray-400">{{ checkedInCount }} checked-in</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-emerald-50">💳</div>
+        <div>
+          <p class="text-sm text-gray-500">Booking Value</p>
+          <p class="text-xl font-bold text-emerald-600">{{ totalRevenue | currency: 'LKR':'symbol':'1.0-0' }}</p>
+          <p class="text-xs text-gray-400">{{ pendingPaymentCount }} pending payments</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="card mb-5 flex items-center gap-3 bg-red-50 border-red-200 text-red-700 text-sm">
+      <span>⚠️</span> {{ error }}
+    </div>
+  }
+  @if (success) {
+    <div class="card mb-5 flex items-center gap-3 bg-green-50 border-green-200 text-green-700 text-sm">
+      <span>✅</span> {{ success }}
+    </div>
+  }
+
+  <div class="card mb-6">
+    <div class="flex flex-col sm:flex-row gap-4 sm:items-center">
+      <select
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="applyFilters()"
+        class="px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm bg-white"
+      >
+        <option value="">All statuses</option>
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+      <span class="text-sm text-gray-400 whitespace-nowrap">
+        {{ filteredBookings.length }} of {{ bookings.length }} bookings
+      </span>
+    </div>
   </div>
 
   @if (loading) {
-    <div class="text-center text-gray-400 py-12">Loading bookings...</div>
-  } @else if (error) {
-    <div class="card text-red-500">{{ error }}</div>
-  } @else if (bookings.length === 0) {
-    <div class="card text-center py-12">
-      <p class="text-gray-400 text-lg">No bookings found</p>
-      <p class="text-gray-300 text-sm mt-2">Create your first booking to get started</p>
+    <div class="empty-state text-gray-400">
+      <p class="text-4xl mb-3">⏳</p>
+      <p>Loading bookings...</p>
+    </div>
+  } @else if (filteredBookings.length === 0) {
+    <div class="empty-state">
+      <p class="text-4xl mb-3">📅</p>
+      <p class="text-gray-500 text-lg font-medium">No bookings found</p>
+      <p class="text-gray-400 text-sm mt-2 mb-4">
+        {{ filterStatus ? 'Try a different status filter' : 'Create your first booking to get started' }}
+      </p>
+      @if (canManageBookings) {
+        <a routerLink="/bookings/new" class="btn-primary">+ New Booking</a>
+      }
     </div>
   } @else {
     <div class="space-y-4">
-      @for (booking of bookings; track $index) {
-        <div class="card">
-          <pre class="text-xs text-gray-600 overflow-auto">{{ booking | json }}</pre>
+      @for (booking of filteredBookings; track booking._id || $index) {
+        <div class="card hover:shadow-md transition-shadow">
+          <div class="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <div class="stat-icon bg-violet-50 text-violet-600">📅</div>
+              <div class="min-w-0">
+                <h3 class="font-semibold text-gray-900 truncate">{{ guestName(booking) }}</h3>
+                <p class="text-sm text-gray-500">{{ roomLabel(booking) }}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-[2]">
+              <div>
+                <p class="text-xs text-gray-400">Check-in</p>
+                <p class="text-sm font-medium text-gray-800">{{ booking.checkIn | date: 'dd MMM yyyy' }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400">Check-out</p>
+                <p class="text-sm font-medium text-gray-800">{{ booking.checkOut | date: 'dd MMM yyyy' }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400">Guests</p>
+                <p class="text-sm font-medium text-gray-800">{{ booking.numberOfGuests || 1 }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400">Total</p>
+                <p class="text-sm font-semibold text-gray-900">
+                  {{ booking.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+              <span [class]="statusClass(booking.status)">{{ booking.status }}</span>
+              <span [class]="paymentClass(booking.paymentStatus)">{{ booking.paymentStatus }}</span>
+            </div>
+          </div>
+
+          @if (booking.specialRequests) {
+            <p class="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-500">
+              <span class="font-medium text-gray-600">Note:</span> {{ booking.specialRequests }}
+            </p>
+          }
+
+          @if (canManageBookings && (canEdit(booking) || canConfirm(booking) || canCancel(booking))) {
+            <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+              @if (canEdit(booking)) {
+                <a
+                  [routerLink]="['/bookings/edit', booking._id]"
+                  class="text-xs bg-serenity-50 hover:bg-serenity-100 text-serenity-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                >
+                  ✏️ Update
+                </a>
+              }
+              @if (canConfirm(booking)) {
+                <button
+                  type="button"
+                  (click)="confirm(booking)"
+                  [disabled]="actionLoadingId === booking._id"
+                  class="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                >
+                  ✅ Confirm
+                </button>
+              }
+              @if (canCancel(booking)) {
+                <button
+                  type="button"
+                  (click)="cancel(booking)"
+                  [disabled]="actionLoadingId === booking._id"
+                  class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                >
+                  ✕ Cancel
+                </button>
+              }
+            </div>
+          }
         </div>
       }
     </div>

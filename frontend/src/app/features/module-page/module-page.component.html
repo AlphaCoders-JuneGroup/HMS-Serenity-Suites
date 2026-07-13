@@ -1,0 +1,98 @@
+<div class="page-shell">
+  <!-- Banner -->
+  <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-serenity-800 via-serenity-700 to-serenity-600 text-white p-6 md:p-8 mb-8 shadow-sm">
+    <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 80% 20%, white 0, transparent 35%);"></div>
+    <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="flex items-start gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-3xl flex-shrink-0">
+          {{ icon }}
+        </div>
+        <div>
+          <h2 class="text-2xl md:text-3xl font-bold">{{ title }}</h2>
+          <p class="text-serenity-100 mt-2 max-w-2xl">{{ description }}</p>
+        </div>
+      </div>
+      <span class="badge bg-white/15 text-white border border-white/20 self-start">Operations ready</span>
+    </div>
+  </div>
+
+  <!-- Related stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+    @for (stat of stats; track stat.label) {
+      <div class="card hover:shadow-md transition-shadow">
+        <div class="flex items-center gap-4">
+          <div class="stat-icon {{ stat.accent }}">{{ stat.icon }}</div>
+          <div>
+            <p class="text-sm text-gray-500">{{ stat.label }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-0.5">{{ stat.value }}</p>
+            <p class="text-xs text-gray-400 mt-1">{{ stat.hint }}</p>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+    <!-- Action cards -->
+    <div class="xl:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
+        <span class="text-xs text-gray-400">Related workflows</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        @for (action of actions; track action.title) {
+          <button type="button" class="card text-left hover:shadow-md hover:border-serenity-200 transition-all group">
+            <div class="flex items-start gap-3">
+              <div class="stat-icon bg-gray-50 text-xl">{{ action.icon }}</div>
+              <div>
+                <h4 class="font-semibold text-gray-900 group-hover:text-serenity-700 transition-colors">
+                  {{ action.title }}
+                </h4>
+                <p class="text-sm text-gray-500 mt-1">{{ action.description }}</p>
+              </div>
+            </div>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Tips + related -->
+    <div class="space-y-4">
+      <div class="card bg-serenity-50 border-serenity-100">
+        <h3 class="text-sm font-semibold text-serenity-800 mb-3">Helpful tips</h3>
+        <ul class="space-y-2">
+          @for (tip of tips; track tip) {
+            <li class="flex items-start gap-2 text-sm text-serenity-700">
+              <span class="mt-0.5">💡</span>
+              <span>{{ tip }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 class="text-sm font-semibold text-gray-800 mb-3">Related modules</h3>
+        <div class="grid grid-cols-2 gap-2">
+          @for (link of related; track link.path) {
+            <a
+              [routerLink]="link.path"
+              class="flex items-center gap-2 rounded-xl border border-gray-100 px-3 py-2.5 text-sm text-gray-700 hover:border-serenity-200 hover:bg-serenity-50 transition-colors"
+            >
+              <span>{{ link.icon }}</span>
+              <span class="font-medium">{{ link.label }}</span>
+            </a>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace placeholder -->
+  <div class="empty-state">
+    <p class="text-4xl mb-3">{{ icon }}</p>
+    <p class="text-gray-600 text-lg font-medium">{{ title }} workspace</p>
+    <p class="text-gray-400 text-sm mt-2 max-w-md mx-auto">
+      Live lists, forms, and records for this module will appear here next.
+    </p>
+  </div>
+</div>

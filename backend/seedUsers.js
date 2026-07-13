@@ -2,13 +2,13 @@
  * seedUsers.js — Seeds all hotel staff users with their respective roles.
  * Run: node seedUsers.js
  *
- * Users created:
- *  Admin              → admin@serenity.com        / Admin@123
- *  Manager            → manager@serenity.com      / Manager@123
- *  Receptionist       → reception@serenity.com    / Recept@123
- *  Housekeeping Mgr   → housekeeping@serenity.com / House@123
- *  Restaurant Staff   → restaurant@serenity.com   / Rest@123
- *  Event Coordinator  → events@serenity.com       / Event@123
+ * Users created (password for all: password123):
+ *  Admin              → admin@serenity.com
+ *  Manager            → manager@serenity.com
+ *  Receptionist       → reception@serenity.com
+ *  Housekeeping Mgr   → housekeeping@serenity.com
+ *  Restaurant Staff   → restaurant@serenity.com
+ *  Event Coordinator  → events@serenity.com
  */
 require('dotenv').config();
 const mongoose = require('mongoose');

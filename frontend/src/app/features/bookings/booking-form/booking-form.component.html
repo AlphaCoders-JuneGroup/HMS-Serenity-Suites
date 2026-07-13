@@ -1,0 +1,278 @@
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">
+        {{ isEditMode ? 'Update Booking' : 'New Reservation' }}
+      </h2>
+      <p class="text-gray-500 mt-1">
+        Check availability, register guests, and manage room bookings
+      </p>
+    </div>
+    <a routerLink="/bookings" class="btn-secondary self-start">← Back to Bookings</a>
+  </div>
+
+  @if (error) {
+    <div class="card mb-5 flex items-center gap-3 bg-red-50 border-red-200 text-red-700 text-sm">
+      <span>⚠️</span> {{ error }}
+    </div>
+  }
+  @if (success) {
+    <div class="card mb-5 flex items-center gap-3 bg-green-50 border-green-200 text-green-700 text-sm">
+      <span>✅</span> {{ success }}
+    </div>
+  }
+
+  @if (loadingData) {
+    <div class="empty-state text-gray-400">
+      <p class="text-4xl mb-3">⏳</p>
+      <p>Loading booking...</p>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="xl:col-span-2 space-y-6">
+        <!-- Dates + availability -->
+        <div class="card">
+          <h3 class="font-semibold text-gray-900 mb-4">1. Stay dates & availability</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Check-in</label>
+              <input
+                type="date"
+                formControlName="checkIn"
+                (change)="updateEstimate()"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Check-out</label>
+              <input
+                type="date"
+                formControlName="checkOut"
+                (change)="updateEstimate()"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm"
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="checkAvailability()"
+            [disabled]="checkingAvailability"
+          >
+            {{ checkingAvailability ? 'Checking...' : 'Check Room Availability' }}
+          </button>
+        </div>
+
+        <!-- Room selection -->
+        <div class="card">
+          <h3 class="font-semibold text-gray-900 mb-4">2. Select room</h3>
+          @if (availableRooms.length === 0) {
+            <p class="text-sm text-gray-400">
+              Check availability to see rooms free for the selected dates.
+            </p>
+          } @else {
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              @for (room of availableRooms; track room._id) {
+                <label
+                  class="flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors"
+                  [class.border-serenity-500]="form.value.room === room._id"
+                  [class.bg-serenity-50]="form.value.room === room._id"
+                  [class.border-gray-200]="form.value.room !== room._id"
+                >
+                  <input
+                    type="radio"
+                    formControlName="room"
+                    [value]="room._id"
+                    (change)="onRoomChange()"
+                    class="mt-1"
+                  />
+                  <div>
+                    <p class="font-medium text-gray-900">Room {{ room.roomNumber }}</p>
+                    <p class="text-sm text-gray-500">
+                      {{ room.type }} · Floor {{ room.floor || '—' }} · Cap {{ room.capacity || '—' }}
+                    </p>
+                    <p class="text-sm font-semibold text-serenity-700 mt-1">
+                      {{ room.price | currency: 'LKR':'symbol':'1.0-0' }} / night
+                    </p>
+                  </div>
+                </label>
+              }
+            </div>
+          }
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Number of guests</label>
+              <input
+                type="number"
+                min="1"
+                formControlName="numberOfGuests"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm"
+              />
+            </div>
+            <div class="rounded-xl bg-gray-50 px-4 py-3">
+              <p class="text-xs text-gray-400">Estimated total</p>
+              <p class="text-xl font-bold text-gray-900">
+                {{ estimatedTotal | currency: 'LKR':'symbol':'1.0-0' }}
+              </p>
+              <p class="text-xs text-gray-400">{{ nights }} night(s)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guest -->
+        <div class="card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-900">3. Guest details</h3>
+            <button
+              type="button"
+              class="text-sm font-medium text-serenity-700 hover:text-serenity-800"
+              (click)="showGuestForm = !showGuestForm"
+            >
+              {{ showGuestForm ? 'Cancel new guest' : '+ Register new guest' }}
+            </button>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-600 mb-1">Select guest</label>
+            <select
+              formControlName="guest"
+              (change)="onGuestChange()"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm bg-white"
+            >
+              <option value="">Choose a guest...</option>
+              @for (g of guests; track g._id) {
+                <option [value]="g._id">
+                  {{ g.firstName }} {{ g.lastName }} — {{ g.email }}
+                </option>
+              }
+            </select>
+          </div>
+
+          @if (showGuestForm) {
+            <div [formGroup]="guestForm" class="rounded-xl border border-serenity-100 bg-serenity-50/50 p-4 space-y-3">
+              <p class="text-sm font-medium text-serenity-800">Register guest details</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input formControlName="firstName" placeholder="First name *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                <input formControlName="lastName" placeholder="Last name *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                <input formControlName="email" type="email" placeholder="Email *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                <input formControlName="phone" placeholder="Phone *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                <input formControlName="nationality" placeholder="Nationality" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                <select formControlName="idType" class="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+                  <option value="">ID type</option>
+                  @for (t of idTypes; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
+                <input formControlName="idNumber" placeholder="ID number" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                <input formControlName="city" placeholder="City" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                <input formControlName="country" placeholder="Country" class="px-3 py-2 rounded-lg border border-gray-200 text-sm sm:col-span-2" />
+              </div>
+              <button type="button" class="btn-primary" (click)="registerGuest()" [disabled]="loading">
+                Save Guest
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Extra -->
+        <div class="card">
+          <h3 class="font-semibold text-gray-900 mb-4">4. Reservation details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Payment status</label>
+              <select
+                formControlName="paymentStatus"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm bg-white"
+              >
+                <option value="Pending">Pending</option>
+                <option value="Partial">Partial</option>
+                <option value="Paid">Paid</option>
+                <option value="Refunded">Refunded</option>
+              </select>
+            </div>
+            @if (isEditMode) {
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Booking status</label>
+                <select
+                  formControlName="status"
+                  class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm bg-white"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Checked-In">Checked-In</option>
+                  <option value="Checked-Out">Checked-Out</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+            }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Special requests</label>
+            <textarea
+              formControlName="specialRequests"
+              rows="3"
+              placeholder="Late check-in, extra pillows, etc."
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button type="submit" class="btn-primary" [disabled]="loading">
+            {{ loading ? 'Saving...' : isEditMode ? 'Update Booking' : 'Create Booking' }}
+          </button>
+          <a routerLink="/bookings" class="btn-secondary">Cancel</a>
+        </div>
+      </form>
+
+      <!-- Guest history sidebar -->
+      <aside class="space-y-4">
+        <div class="card">
+          <h3 class="font-semibold text-gray-900 mb-2">Reservation summary</h3>
+          <ul class="text-sm text-gray-600 space-y-2">
+            <li>Nights: <strong>{{ nights || '—' }}</strong></li>
+            <li>Room: <strong>{{ selectedRoom ? 'Room ' + selectedRoom.roomNumber : '—' }}</strong></li>
+            <li>Total: <strong>{{ estimatedTotal | currency: 'LKR':'symbol':'1.0-0' }}</strong></li>
+          </ul>
+          <p class="text-xs text-gray-400 mt-3">
+            Duplicate room bookings for overlapping dates are blocked automatically.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3 class="font-semibold text-gray-900 mb-3">Guest reservation history</h3>
+          @if (!form.value.guest) {
+            <p class="text-sm text-gray-400">Select a guest to view past reservations.</p>
+          } @else if (guestHistory.length === 0) {
+            <p class="text-sm text-gray-400">No previous bookings for {{ historyGuestName || 'this guest' }}.</p>
+          } @else {
+            <p class="text-xs text-gray-400 mb-3">{{ historyGuestName }} · {{ guestHistory.length }} booking(s)</p>
+            <div class="space-y-3 max-h-96 overflow-y-auto">
+              @for (h of guestHistory; track h._id) {
+                <div class="rounded-xl border border-gray-100 px-3 py-2.5">
+                  <div class="flex items-center justify-between gap-2 mb-1">
+                    <p class="text-sm font-medium text-gray-800">
+                      @if (h.room && $any(h.room).roomNumber) {
+                        Room {{ $any(h.room).roomNumber }}
+                      } @else {
+                        Room —
+                      }
+                    </p>
+                    <span [class]="statusClass(h.status)">{{ h.status }}</span>
+                  </div>
+                  <p class="text-xs text-gray-500">
+                    {{ h.checkIn | date: 'dd MMM yyyy' }} → {{ h.checkOut | date: 'dd MMM yyyy' }}
+                  </p>
+                  <p class="text-xs font-medium text-gray-700 mt-1">
+                    {{ h.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}
+                  </p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </aside>
+    </div>
+  }
+</div>
