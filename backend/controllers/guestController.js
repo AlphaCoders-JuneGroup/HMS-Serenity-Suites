@@ -2,6 +2,40 @@ const Guest = require('../models/Guest');
 const Booking = require('../models/Booking');
 
 const ACTIVE_STAY_STATUSES = ['Pending', 'Confirmed', 'Checked-In'];
+const SRI_LANKAN_PHONE = /^0\d{9}$/;
+
+function validatePhone(phone) {
+  if (phone === null || phone === undefined) {
+    return 'Phone number is required.';
+  }
+  const value = String(phone);
+  if (value === '') {
+    return 'Phone number is required.';
+  }
+  if (value.trim() === '') {
+    return 'Please enter a phone number.';
+  }
+  if (!/^\d+$/.test(value)) {
+    return 'Phone number must contain only numbers.';
+  }
+  if (value.length !== 10) {
+    return 'Phone number must be exactly 10 digits.';
+  }
+  if (!value.startsWith('0')) {
+    return 'Phone number must start with 0.';
+  }
+  if (!SRI_LANKAN_PHONE.test(value)) {
+    return 'Please enter a valid phone number.';
+  }
+  return null;
+}
+
+function duplicateKeyMessage(error) {
+  const key = Object.keys(error.keyPattern || {})[0];
+  if (key === 'phone') return 'This phone number is already registered.';
+  if (key === 'email') return 'This email is already registered.';
+  return 'A guest with these details already exists.';
+}
 
 exports.getAllGuests = async (req, res) => {
   try {
@@ -106,11 +140,24 @@ exports.createGuest = async (req, res) => {
       });
     }
 
-    const existing = await Guest.findOne({ email: email.toLowerCase().trim() });
-    if (existing) {
+    const phoneError = validatePhone(phone);
+    if (phoneError) {
+      return res.status(400).json({ success: false, message: phoneError });
+    }
+
+    const existingEmail = await Guest.findOne({ email: email.toLowerCase().trim() });
+    if (existingEmail) {
       return res.status(400).json({
         success: false,
-        message: 'A guest with this email already exists.',
+        message: 'This email is already registered.',
+      });
+    }
+
+    const existingPhone = await Guest.findOne({ phone: String(phone).trim() });
+    if (existingPhone) {
+      return res.status(400).json({
+        success: false,
+        message: 'This phone number is already registered.',
       });
     }
 
@@ -118,7 +165,7 @@ exports.createGuest = async (req, res) => {
       firstName,
       lastName,
       email,
-      phone,
+      phone: String(phone).trim(),
       nationality,
       idType: idType || undefined,
       idNumber,
@@ -127,6 +174,12 @@ exports.createGuest = async (req, res) => {
 
     res.status(201).json({ success: true, data: guest });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: duplicateKeyMessage(error),
+      });
+    }
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -148,6 +201,25 @@ exports.updateGuest = async (req, res) => {
       if (req.body[key] !== undefined) update[key] = req.body[key];
     }
 
+    if (update.phone !== undefined) {
+      const phoneError = validatePhone(update.phone);
+      if (phoneError) {
+        return res.status(400).json({ success: false, message: phoneError });
+      }
+      update.phone = String(update.phone).trim();
+
+      const existingPhone = await Guest.findOne({
+        phone: update.phone,
+        _id: { $ne: req.params.id },
+      });
+      if (existingPhone) {
+        return res.status(400).json({
+          success: false,
+          message: 'This phone number is already registered.',
+        });
+      }
+    }
+
     if (update.email) {
       const existing = await Guest.findOne({
         email: String(update.email).toLowerCase().trim(),
@@ -156,7 +228,7 @@ exports.updateGuest = async (req, res) => {
       if (existing) {
         return res.status(400).json({
           success: false,
-          message: 'A guest with this email already exists.',
+          message: 'This email is already registered.',
         });
       }
     }
@@ -172,6 +244,12 @@ exports.updateGuest = async (req, res) => {
     }
     res.json({ success: true, data: guest });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: duplicateKeyMessage(error),
+      });
+    }
     res.status(400).json({ success: false, message: error.message });
   }
 };

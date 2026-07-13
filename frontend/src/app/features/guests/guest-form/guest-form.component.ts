@@ -10,6 +10,11 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { GuestService } from '../../../core/services/guest.service';
+import {
+  guestEmailValidator,
+  guestNameValidator,
+  sriLankanPhoneValidator,
+} from '../../../core/validators/guest-field.validators';
 
 /** Require ID number when an ID type is selected */
 function idNumberRequiredWhenType(group: AbstractControl): ValidationErrors | null {
@@ -44,12 +49,6 @@ export class GuestFormComponent implements OnInit {
 
   readonly idTypes = ['Passport', 'National ID', 'Driving License'];
 
-  // Letters, spaces, hyphens, apostrophes
-  private readonly namePattern = /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ\s'-]{0,48}$/;
-  // Digits with optional +, spaces, dashes, parentheses
-  private readonly phonePattern = /^\+?[\d\s\-()]{7,20}$/;
-  private readonly zipPattern = /^[A-Za-z0-9\s-]{0,12}$/;
-
   constructor(
     private fb: FormBuilder,
     private guestService: GuestService,
@@ -67,37 +66,10 @@ export class GuestFormComponent implements OnInit {
   buildForm(): void {
     this.form = this.fb.group(
       {
-        firstName: [
-          '',
-          [
-            Validators.required,
-            Validators.minLength(2),
-            Validators.maxLength(50),
-            Validators.pattern(this.namePattern),
-          ],
-        ],
-        lastName: [
-          '',
-          [
-            Validators.required,
-            Validators.minLength(2),
-            Validators.maxLength(50),
-            Validators.pattern(this.namePattern),
-          ],
-        ],
-        email: [
-          '',
-          [Validators.required, Validators.email, Validators.maxLength(100)],
-        ],
-        phone: [
-          '',
-          [
-            Validators.required,
-            Validators.pattern(this.phonePattern),
-            Validators.minLength(7),
-            Validators.maxLength(20),
-          ],
-        ],
+        firstName: ['', [guestNameValidator()]],
+        lastName: ['', [guestNameValidator()]],
+        email: ['', [guestEmailValidator()]],
+        phone: ['', [sriLankanPhoneValidator()]],
         nationality: ['', [Validators.maxLength(60), Validators.pattern(/^[A-Za-z\s'-]*$/)]],
         idType: [''],
         idNumber: ['', [Validators.maxLength(40), Validators.pattern(/^[A-Za-z0-9\-\s]*$/)]],
@@ -105,7 +77,7 @@ export class GuestFormComponent implements OnInit {
         city: ['', [Validators.maxLength(60), Validators.pattern(/^[A-Za-z\s'-]*$/)]],
         state: ['', [Validators.maxLength(60), Validators.pattern(/^[A-Za-z\s'-]*$/)]],
         country: ['', [Validators.maxLength(60), Validators.pattern(/^[A-Za-z\s'-]*$/)]],
-        zipCode: ['', [Validators.maxLength(12), Validators.pattern(this.zipPattern)]],
+        zipCode: ['', [Validators.maxLength(12), Validators.pattern(/^[A-Za-z0-9\s-]*$/)]],
       },
       { validators: idNumberRequiredWhenType }
     );
@@ -114,6 +86,16 @@ export class GuestFormComponent implements OnInit {
       this.form.updateValueAndValidity({ emitEvent: false });
       this.form.get('idNumber')?.updateValueAndValidity({ emitEvent: false });
     });
+  }
+
+  /** Keep phone digits-only while typing (max 10) */
+  onPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digits = input.value.replace(/\D/g, '').slice(0, 10);
+    if (input.value !== digits) {
+      this.form.get('phone')?.setValue(digits, { emitEvent: true });
+      input.value = digits;
+    }
   }
 
   loadGuest(): void {
@@ -149,6 +131,42 @@ export class GuestFormComponent implements OnInit {
     return !!ctrl && ctrl.invalid && (ctrl.touched || this.submitted);
   }
 
+  phoneErrorMessage(): string {
+    const errors = this.f['phone'].errors;
+    if (!errors) return '';
+    if (errors['required']) return 'Phone number is required.';
+    if (errors['empty']) return 'Please enter a phone number.';
+    if (errors['digitsOnly']) return 'Phone number must contain only numbers.';
+    if (errors['length']) return 'Phone number must be exactly 10 digits.';
+    if (errors['startsWithZero']) return 'Phone number must start with 0.';
+    if (errors['invalidFormat']) return 'Please enter a valid phone number.';
+    if (errors['duplicate']) return 'This phone number is already registered.';
+    return 'Please enter a valid phone number.';
+  }
+
+  emailErrorMessage(): string {
+    const errors = this.f['email'].errors;
+    if (!errors) return '';
+    if (errors['required']) return 'Email is required.';
+    if (errors['empty']) return 'Please enter an email address.';
+    if (errors['invalidFormat'] || errors['email']) return 'Please enter a valid email address.';
+    if (errors['maxlength']) return 'Email must be at most 100 characters.';
+    if (errors['duplicate']) return 'This email is already registered.';
+    return 'Please enter a valid email address.';
+  }
+
+  nameErrorMessage(controlName: 'firstName' | 'lastName'): string {
+    const label = controlName === 'firstName' ? 'First name' : 'Last name';
+    const errors = this.f[controlName].errors;
+    if (!errors) return '';
+    if (errors['required']) return `${label} is required.`;
+    if (errors['empty']) return `Please enter a ${label.toLowerCase()}.`;
+    if (errors['minlength']) return `${label} must be at least 2 characters.`;
+    if (errors['maxlength']) return `${label} must be at most 50 characters.`;
+    if (errors['pattern']) return `${label} must contain only letters (spaces, - and ' allowed).`;
+    return `Please enter a valid ${label.toLowerCase()}.`;
+  }
+
   onSubmit(): void {
     this.submitted = true;
     this.form.markAllAsTouched();
@@ -166,7 +184,7 @@ export class GuestFormComponent implements OnInit {
       firstName: v.firstName.trim(),
       lastName: v.lastName.trim(),
       email: v.email.trim().toLowerCase(),
-      phone: v.phone.trim(),
+      phone: String(v.phone).trim(),
       nationality: v.nationality?.trim() || undefined,
       idType: v.idType || undefined,
       idNumber: v.idNumber?.trim() || undefined,
@@ -190,8 +208,16 @@ export class GuestFormComponent implements OnInit {
         this.router.navigate(id ? ['/guests', id] : ['/guests']);
       },
       error: (err) => {
-        this.error = err.error?.message || 'Failed to save guest';
+        const msg = err.error?.message || 'Failed to save guest';
+        this.error = msg;
         this.loading = false;
+
+        if (/phone number is already registered/i.test(msg)) {
+          this.f['phone'].setErrors({ ...(this.f['phone'].errors || {}), duplicate: true });
+        }
+        if (/email already exists|email is already registered/i.test(msg)) {
+          this.f['email'].setErrors({ ...(this.f['email'].errors || {}), duplicate: true });
+        }
       },
     });
   }

@@ -153,10 +153,33 @@
             <div [formGroup]="guestForm" class="rounded-xl border border-serenity-100 bg-serenity-50/50 p-4 space-y-3">
               <p class="text-sm font-medium text-serenity-800">Register guest details</p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input formControlName="firstName" placeholder="First name *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-                <input formControlName="lastName" placeholder="Last name *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-                <input formControlName="email" type="email" placeholder="Email *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-                <input formControlName="phone" placeholder="Phone *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                <div>
+                  <input formControlName="firstName" placeholder="First name *" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" [class.border-red-400]="guestFieldError('firstName')" />
+                </div>
+                <div>
+                  <input formControlName="lastName" placeholder="Last name *" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" [class.border-red-400]="guestFieldError('lastName')" />
+                </div>
+                <div>
+                  <input formControlName="email" type="email" placeholder="Email *" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" [class.border-red-400]="guestFieldError('email')" />
+                  @if (guestFieldError('email')) {
+                    <p class="text-red-500 text-xs mt-1">{{ guestEmailError() }}</p>
+                  }
+                </div>
+                <div>
+                  <input
+                    formControlName="phone"
+                    type="tel"
+                    inputmode="numeric"
+                    maxlength="10"
+                    placeholder="Phone * (07XXXXXXXX)"
+                    (input)="onGuestPhoneInput($event)"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                    [class.border-red-400]="guestFieldError('phone')"
+                  />
+                  @if (guestFieldError('phone')) {
+                    <p class="text-red-500 text-xs mt-1">{{ guestPhoneError() }}</p>
+                  }
+                </div>
                 <input formControlName="nationality" placeholder="Nationality" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
                 <select formControlName="idType" class="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
                   <option value="">ID type</option>

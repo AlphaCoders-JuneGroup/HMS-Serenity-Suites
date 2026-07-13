@@ -13,6 +13,11 @@ import {
   BookingRoom,
   BookingService,
 } from '../../../core/services/booking.service';
+import {
+  guestEmailValidator,
+  guestNameValidator,
+  sriLankanPhoneValidator,
+} from '../../../core/validators/guest-field.validators';
 
 @Component({
   selector: 'app-booking-form',
@@ -78,16 +83,53 @@ export class BookingFormComponent implements OnInit {
     });
 
     this.guestForm = this.fb.group({
-      firstName: ['', [Validators.required, Validators.minLength(2)]],
-      lastName: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
-      phone: ['', Validators.required],
+      firstName: ['', [guestNameValidator()]],
+      lastName: ['', [guestNameValidator()]],
+      email: ['', [guestEmailValidator()]],
+      phone: ['', [sriLankanPhoneValidator()]],
       nationality: [''],
       idType: [''],
       idNumber: [''],
       city: [''],
       country: [''],
     });
+  }
+
+  onGuestPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digits = input.value.replace(/\D/g, '').slice(0, 10);
+    if (input.value !== digits) {
+      this.guestForm.get('phone')?.setValue(digits, { emitEvent: true });
+      input.value = digits;
+    }
+  }
+
+  guestFieldError(controlName: string): boolean {
+    const ctrl = this.guestForm.get(controlName);
+    return !!ctrl && ctrl.invalid && ctrl.touched;
+  }
+
+  guestPhoneError(): string {
+    const errors = this.guestForm.get('phone')?.errors;
+    if (!errors) return '';
+    if (errors['required']) return 'Phone number is required.';
+    if (errors['empty']) return 'Please enter a phone number.';
+    if (errors['digitsOnly']) return 'Phone number must contain only numbers.';
+    if (errors['length']) return 'Phone number must be exactly 10 digits.';
+    if (errors['startsWithZero']) return 'Phone number must start with 0.';
+    if (errors['invalidFormat']) return 'Please enter a valid phone number.';
+    if (errors['duplicate']) return 'This phone number is already registered.';
+    return 'Please enter a valid phone number.';
+  }
+
+  guestEmailError(): string {
+    const errors = this.guestForm.get('email')?.errors;
+    if (!errors) return '';
+    if (errors['required']) return 'Email is required.';
+    if (errors['empty']) return 'Please enter an email address.';
+    if (errors['invalidFormat'] || errors['email']) return 'Please enter a valid email address.';
+    if (errors['duplicate']) return 'This email is already registered.';
+    return 'Please enter a valid email address.';
   }
 
   loadGuests(): void {
@@ -210,8 +252,9 @@ export class BookingFormComponent implements OnInit {
   }
 
   registerGuest(): void {
+    this.guestForm.markAllAsTouched();
     if (this.guestForm.invalid) {
-      this.guestForm.markAllAsTouched();
+      this.error = 'Please fix guest form validation errors.';
       return;
     }
 
@@ -221,10 +264,10 @@ export class BookingFormComponent implements OnInit {
 
     this.bookingService
       .createGuest({
-        firstName: v.firstName,
-        lastName: v.lastName,
-        email: v.email,
-        phone: v.phone,
+        firstName: v.firstName.trim(),
+        lastName: v.lastName.trim(),
+        email: v.email.trim().toLowerCase(),
+        phone: String(v.phone).trim(),
         nationality: v.nationality || undefined,
         idType: v.idType || undefined,
         idNumber: v.idNumber || undefined,
@@ -245,8 +288,21 @@ export class BookingFormComponent implements OnInit {
           this.loading = false;
         },
         error: (err) => {
-          this.error = err.error?.message || 'Failed to register guest';
+          const msg = err.error?.message || 'Failed to register guest';
+          this.error = msg;
           this.loading = false;
+          if (/phone number is already registered/i.test(msg)) {
+            this.guestForm.get('phone')?.setErrors({
+              ...(this.guestForm.get('phone')?.errors || {}),
+              duplicate: true,
+            });
+          }
+          if (/email is already registered|email already exists/i.test(msg)) {
+            this.guestForm.get('email')?.setErrors({
+              ...(this.guestForm.get('email')?.errors || {}),
+              duplicate: true,
+            });
+          }
         },
       });
   }
