@@ -5,15 +5,23 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "lsof -ti :5001 | xargs kill -9 2>/dev/null; nodemon server.js",
+    "kill-port": "lsof -ti :5001 | xargs kill -9 2>/dev/null && echo 'Port 5001 cleared'"
   },
-  "keywords": ["hotel", "management", "express", "mongodb"],
+  "keywords": [
+    "hotel",
+    "management",
+    "express",
+    "mongodb"
+  ],
   "author": "AlphaCoders",
   "license": "MIT",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.9.3"
   },
   "devDependencies": {

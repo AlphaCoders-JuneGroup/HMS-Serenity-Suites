@@ -1,0 +1,127 @@
+<div class="min-h-screen bg-gradient-to-br from-serenity-900 via-serenity-800 to-serenity-700 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-white bg-opacity-20 rounded-2xl mb-4">
+        <span class="text-3xl">📝</span>
+      </div>
+      <h1 class="text-3xl font-bold text-white tracking-tight">Create Account</h1>
+      <p class="text-serenity-200 mt-1">Join Serenity Suites HMS</p>
+    </div>
+
+    <!-- Form Container -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      
+      <!-- Error Message -->
+      @if (error) {
+        <div class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
+          <span>⚠️</span>
+          <span>{{ error }}</span>
+        </div>
+      }
+
+      <form class="space-y-5" (ngSubmit)="onSubmit()" #registerForm="ngForm">
+        
+        <!-- Name -->
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            required
+            [(ngModel)]="name"
+            placeholder="John Doe"
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 transition-colors duration-200 outline-none focus:ring-2 focus:ring-serenity-500 focus:border-serenity-500"
+          />
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email address *</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            [(ngModel)]="email"
+            placeholder="you@serenity.com"
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 transition-colors duration-200 outline-none focus:ring-2 focus:ring-serenity-500 focus:border-serenity-500"
+          />
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            required
+            [(ngModel)]="password"
+            placeholder="••••••••"
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 transition-colors duration-200 outline-none focus:ring-2 focus:ring-serenity-500 focus:border-serenity-500"
+          />
+        </div>
+
+        <!-- Role -->
+        <div>
+          <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+          <select
+            id="role"
+            name="role"
+            required
+            [(ngModel)]="role"
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white transition-colors duration-200 outline-none focus:ring-2 focus:ring-serenity-500 focus:border-serenity-500"
+          >
+            <option value="" disabled selected>Select a role</option>
+            @for (r of roles; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Phone (Optional) -->
+        <div>
+          <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            [(ngModel)]="phone"
+            placeholder="077xxxxxxx"
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 transition-colors duration-200 outline-none focus:ring-2 focus:ring-serenity-500 focus:border-serenity-500"
+          />
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          [disabled]="isLoading || !registerForm.form.valid"
+          class="w-full btn-primary mt-2 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+        >
+          @if (isLoading) {
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            Registering...
+          } @else {
+            Create Account
+          }
+        </button>
+
+      </form>
+      
+      <!-- Footer Link -->
+      <div class="mt-6 text-center text-sm">
+        <span class="text-gray-500">Already have an account? </span>
+        <a routerLink="/login" class="font-semibold text-serenity-600 hover:text-serenity-500">Sign in instead</a>
+      </div>
+
+    </div>
+  </div>
+</div>
