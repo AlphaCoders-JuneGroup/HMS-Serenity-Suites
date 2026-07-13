@@ -2,12 +2,15 @@
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
       <h2 class="text-2xl font-bold text-gray-900">Guest Management</h2>
-      <p class="text-gray-500 mt-1">Manage guest profiles and contact information</p>
+      <p class="text-gray-500 mt-1">
+        Register guests, update profiles, and review stay history
+      </p>
     </div>
-    <button class="btn-primary self-start">+ Add Guest</button>
+    @if (canManageGuests) {
+      <a routerLink="/guests/new" class="btn-primary self-start">+ Register Guest</a>
+    }
   </div>
 
-  <!-- Related summary cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
     <div class="card">
       <div class="flex items-center gap-3">
@@ -47,13 +50,24 @@
     </div>
   </div>
 
+  @if (error) {
+    <div class="card mb-5 flex items-center gap-3 bg-red-50 border-red-200 text-red-700 text-sm">
+      <span>⚠️</span> {{ error }}
+    </div>
+  }
+  @if (success) {
+    <div class="card mb-5 flex items-center gap-3 bg-green-50 border-green-200 text-green-700 text-sm">
+      <span>✅</span> {{ success }}
+    </div>
+  }
+
   <div class="card mb-6">
     <div class="flex flex-col sm:flex-row gap-4 sm:items-center">
       <input
         type="text"
         [(ngModel)]="searchTerm"
         (ngModelChange)="applyFilters()"
-        placeholder="Search by name, email, phone, or nationality..."
+        placeholder="Search by name, email, phone, ID number, or nationality..."
         class="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm"
       />
       <span class="text-sm text-gray-400 whitespace-nowrap">
@@ -67,10 +81,6 @@
       <p class="text-4xl mb-3">⏳</p>
       <p>Loading guests...</p>
     </div>
-  } @else if (error) {
-    <div class="card flex items-center gap-3 bg-red-50 border-red-200 text-red-700">
-      <span>⚠️</span> {{ error }}
-    </div>
   } @else {
     <div class="card overflow-hidden p-0">
       <div class="overflow-x-auto">
@@ -82,6 +92,7 @@
               <th class="text-left px-6 py-4 font-semibold text-gray-600">Location</th>
               <th class="text-left px-6 py-4 font-semibold text-gray-600">ID</th>
               <th class="text-left px-6 py-4 font-semibold text-gray-600">Nationality</th>
+              <th class="text-right px-6 py-4 font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -109,17 +120,49 @@
                   }
                 </td>
                 <td class="px-6 py-4 text-gray-500">{{ guest.nationality || '—' }}</td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-2 flex-wrap">
+                    <a
+                      [routerLink]="['/guests', guest._id]"
+                      class="text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                    >
+                      👤 Profile
+                    </a>
+                    @if (canManageGuests) {
+                      <a
+                        [routerLink]="['/guests/edit', guest._id]"
+                        class="text-xs bg-serenity-50 hover:bg-serenity-100 text-serenity-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                      >
+                        ✏️ Edit
+                      </a>
+                      @if (deleteConfirmId === guest._id) {
+                        <button (click)="deleteGuest(guest._id!)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg">Yes</button>
+                        <button (click)="cancelDelete()" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg">No</button>
+                      } @else {
+                        <button
+                          (click)="confirmDelete(guest._id!)"
+                          class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                        >
+                          🗑️
+                        </button>
+                      }
+                    }
+                  </div>
+                </td>
               </tr>
             }
 
             @if (filteredGuests.length === 0) {
               <tr>
-                <td colspan="5" class="px-6 py-16 text-center text-gray-400">
+                <td colspan="6" class="px-6 py-16 text-center text-gray-400">
                   <p class="text-4xl mb-3">👥</p>
                   <p class="font-medium text-gray-500">No guests found</p>
-                  <p class="text-sm mt-1">
+                  <p class="text-sm mt-1 mb-4">
                     {{ searchTerm ? 'Try a different search' : 'Register your first guest to get started' }}
                   </p>
+                  @if (canManageGuests && !searchTerm) {
+                    <a routerLink="/guests/new" class="btn-primary">+ Register Guest</a>
+                  }
                 </td>
               </tr>
             }

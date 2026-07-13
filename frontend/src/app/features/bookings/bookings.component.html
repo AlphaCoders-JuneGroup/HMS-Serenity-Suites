@@ -8,8 +8,6 @@
     </div>
     @if (canManageBookings) {
       <a routerLink="/bookings/new" class="btn-primary self-start">+ New Booking</a>
-    } @else {
-      <span class="badge-neutral self-start">View only</span>
     }
   </div>
 
@@ -146,9 +144,9 @@
             </p>
           }
 
-          @if (canManageBookings && (canEdit(booking) || canConfirm(booking) || canCancel(booking))) {
+          @if (canManageBookings && (canEdit(booking) || canConfirm(booking) || canCancel(booking) || canMarkPaid(booking)) || canShowReceipt(booking)) {
             <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
-              @if (canEdit(booking)) {
+              @if (canManageBookings && canEdit(booking)) {
                 <a
                   [routerLink]="['/bookings/edit', booking._id]"
                   class="text-xs bg-serenity-50 hover:bg-serenity-100 text-serenity-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
@@ -166,6 +164,16 @@
                   ✅ Confirm
                 </button>
               }
+              @if (canMarkPaid(booking)) {
+                <button
+                  type="button"
+                  (click)="markPaidAndGenerateReceipt(booking)"
+                  [disabled]="actionLoadingId === booking._id"
+                  class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                >
+                  💳 Full Payment & Receipt
+                </button>
+              }
               @if (canCancel(booking)) {
                 <button
                   type="button"
@@ -176,6 +184,15 @@
                   ✕ Cancel
                 </button>
               }
+              @if (canShowReceipt(booking)) {
+                <button
+                  type="button"
+                  (click)="openReceipt(booking)"
+                  class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                >
+                  🧾 View Receipt
+                </button>
+              }
             </div>
           }
         </div>
@@ -183,3 +200,87 @@
     </div>
   }
 </div>
+
+<!-- Booking receipt modal -->
+@if (showReceipt && receiptBooking) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:static print:bg-transparent print:p-0">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto print:shadow-none print:max-w-none print:rounded-none">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between print:hidden">
+        <h3 class="font-semibold text-gray-900">Booking Receipt</h3>
+        <div class="flex gap-2">
+          <button type="button" class="btn-primary text-sm" (click)="printReceipt()">🖨 Print</button>
+          <button type="button" class="btn-secondary text-sm" (click)="closeReceipt()">Close</button>
+        </div>
+      </div>
+
+      <div id="booking-receipt" class="p-6 text-gray-800">
+        <div class="text-center mb-5">
+          <h2 class="text-xl font-bold tracking-tight">Serenity Suites</h2>
+          <p class="text-sm text-gray-500">Booking Receipt</p>
+          <p class="text-xs text-gray-400 mt-1">Receipt #{{ receiptId(receiptBooking) }}</p>
+        </div>
+
+        <div class="border-t border-b border-dashed border-gray-300 py-3 text-sm space-y-1.5 mb-4">
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Guest</span>
+            <span class="font-medium text-right">{{ guestName(receiptBooking) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Email</span>
+            <span class="text-right">{{ guestEmail(receiptBooking) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Phone</span>
+            <span class="text-right">{{ guestPhone(receiptBooking) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Room</span>
+            <span class="font-medium text-right">{{ roomNumber(receiptBooking) }} · {{ roomType(receiptBooking) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Check-in</span>
+            <span>{{ receiptBooking.checkIn | date: 'dd MMM yyyy' }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Check-out</span>
+            <span>{{ receiptBooking.checkOut | date: 'dd MMM yyyy' }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Nights</span>
+            <span>{{ nights(receiptBooking) }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Guests</span>
+            <span>{{ receiptBooking.numberOfGuests || 1 }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Status</span>
+            <span>{{ receiptBooking.status }}</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-gray-500">Payment</span>
+            <span>{{ receiptBooking.paymentStatus }}</span>
+          </div>
+        </div>
+
+        @if (receiptBooking.specialRequests) {
+          <p class="text-sm text-gray-500 mb-4">
+            <span class="font-medium text-gray-700">Special requests:</span>
+            {{ receiptBooking.specialRequests }}
+          </p>
+        }
+
+        <div class="border-t border-gray-300 pt-3">
+          <div class="flex justify-between font-bold text-base">
+            <span>Total Amount</span>
+            <span>{{ receiptBooking.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <p class="text-center text-xs text-gray-400 mt-6">
+          Thank you for choosing Serenity Suites
+        </p>
+      </div>
+    </div>
+  </div>
+}

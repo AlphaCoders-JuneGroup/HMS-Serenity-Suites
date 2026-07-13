@@ -8,6 +8,7 @@ const userRoutes = require('./routes/userRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const guestRoutes = require('./routes/guestRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const restaurantRoutes = require('./routes/restaurantRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,6 +32,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/restaurant', restaurantRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });

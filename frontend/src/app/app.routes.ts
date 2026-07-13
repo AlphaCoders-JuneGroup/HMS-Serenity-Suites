@@ -3,9 +3,12 @@ import { LayoutComponent } from './shared/layout/layout.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { RoomsComponent } from './features/rooms/rooms.component';
 import { GuestsComponent } from './features/guests/guests.component';
+import { GuestFormComponent } from './features/guests/guest-form/guest-form.component';
+import { GuestProfileComponent } from './features/guests/guest-profile/guest-profile.component';
 import { BookingsComponent } from './features/bookings/bookings.component';
 import { BookingFormComponent } from './features/bookings/booking-form/booking-form.component';
 import { ModulePageComponent } from './features/module-page/module-page.component';
+import { RestaurantComponent } from './features/restaurant/restaurant.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { UnauthorizedComponent } from './features/auth/unauthorized/unauthorized.component';
@@ -20,7 +23,8 @@ import { roleGuard } from './core/guards/role.guard';
  * Route              | Admin | Manager | Receptionist | HK Mgr | Rest | Event
  * ─────────────────────────────────────────────────────────────────────────────
  * /dashboard         |  ✅   |   ✅    |     ✅       |   ✅   |  ✅  |  ✅
- * /guests            |  ✅   |   ✅    |     ✅       |   ❌   |  ❌  |  ❌
+ * /guests            |  ✅   |  view   |     ✅       |   ❌   |  ❌  |  ❌
+ * /guests/new|edit   |  ✅   |   ❌    |     ✅       |   ❌   |  ❌  |  ❌
  * /rooms             |  ✅   |   ✅    |     ✅       |   ✅   |  ❌  |  ❌
  * /bookings          |  ✅   |  view   |     ✅       |   ❌   |  ❌  |  ❌
  * /bookings/new|edit |  ✅   |   ❌    |     ✅       |   ❌   |  ❌  |  ❌
@@ -50,11 +54,26 @@ export const routes: Routes = [
 
       { path: 'dashboard', component: DashboardComponent },
 
-      // 2. Guest Management
+      // 2. Guest Management (Manager = view only)
       {
         path: 'guests',
         canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
         component: GuestsComponent,
+      },
+      {
+        path: 'guests/new',
+        canActivate: [roleGuard('Admin', 'Receptionist')],
+        component: GuestFormComponent,
+      },
+      {
+        path: 'guests/edit/:id',
+        canActivate: [roleGuard('Admin', 'Receptionist')],
+        component: GuestFormComponent,
+      },
+      {
+        path: 'guests/:id',
+        canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
+        component: GuestProfileComponent,
       },
 
       // 3. Room Management
@@ -107,17 +126,11 @@ export const routes: Routes = [
         },
       },
 
-      // 7. Restaurant Management
+      // 7. Restaurant Management (Manager = view only)
       {
         path: 'restaurant',
         canActivate: [roleGuard('Admin', 'Manager', 'Restaurant Staff')],
-        component: ModulePageComponent,
-        data: {
-          title: 'Restaurant Management',
-          description: 'Manage dining orders, menus, and restaurant services',
-          icon: '🍽️',
-          moduleKey: 'restaurant',
-        },
+        component: RestaurantComponent,
       },
 
       // 8. Housekeeping Management
