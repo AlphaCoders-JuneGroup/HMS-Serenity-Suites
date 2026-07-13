@@ -1,0 +1,185 @@
+<div class="p-8">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">User Management</h2>
+      <p class="text-gray-500 mt-1">Manage hotel staff accounts and their roles</p>
+    </div>
+    <a routerLink="/users/new" class="btn-primary flex items-center gap-2">
+      <span>＋</span> Add User
+    </a>
+  </div>
+
+  <!-- Success Alert -->
+  @if (successMessage) {
+    <div class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 mb-5 text-sm">
+      <span>✅</span> {{ successMessage }}
+    </div>
+  }
+
+  <!-- Error Alert -->
+  @if (error) {
+    <div class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
+      <span>⚠️</span> {{ error }}
+    </div>
+  }
+
+  <!-- Filters -->
+  <div class="card mb-6">
+    <div class="flex flex-col sm:flex-row gap-4">
+      <!-- Search -->
+      <div class="flex-1">
+        <input
+          id="user-search"
+          type="text"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilters()"
+          placeholder="🔍  Search by name or email..."
+          class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm"
+        />
+      </div>
+      <!-- Role filter -->
+      <select
+        id="filter-role"
+        [(ngModel)]="filterRole"
+        (ngModelChange)="applyFilters()"
+        class="px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm bg-white"
+      >
+        <option value="">All Roles</option>
+        @for (role of roles; track role) {
+          <option [value]="role">{{ role }}</option>
+        }
+      </select>
+      <!-- Status filter -->
+      <select
+        id="filter-status"
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="applyFilters()"
+        class="px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm bg-white"
+      >
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="card text-center py-16 text-gray-400">
+      <p class="text-4xl mb-3">⏳</p>
+      <p>Loading users...</p>
+    </div>
+  }
+
+  <!-- User Table -->
+  @if (!loading) {
+    <div class="card overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-100">
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">#</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Name</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Email</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Role</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Phone</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Status</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Created</th>
+              <th class="text-right px-6 py-4 font-semibold text-gray-600">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of filteredUsers; track user._id; let i = $index) {
+              <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 text-gray-400">{{ i + 1 }}</td>
+
+                <!-- Name + Avatar -->
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-serenity-100 text-serenity-700 flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                      {{ user.name.charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="font-medium text-gray-800">{{ user.name }}</span>
+                  </div>
+                </td>
+
+                <td class="px-6 py-4 text-gray-500">{{ user.email }}</td>
+
+                <!-- Role Badge -->
+                <td class="px-6 py-4">
+                  <span class="px-2.5 py-1 rounded-full text-xs font-semibold" [ngClass]="getRoleColor(user.role)">
+                    {{ user.role }}
+                  </span>
+                </td>
+
+                <td class="px-6 py-4 text-gray-500">{{ user.phone || '—' }}</td>
+
+                <!-- Status Toggle -->
+                <td class="px-6 py-4">
+                  <button
+                    (click)="toggleStatus(user)"
+                    class="px-2.5 py-1 rounded-full text-xs font-semibold transition-colors"
+                    [class]="user.isActive
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                  >
+                    {{ user.isActive ? '● Active' : '○ Inactive' }}
+                  </button>
+                </td>
+
+                <td class="px-6 py-4 text-gray-400 text-xs">
+                  {{ user.createdAt | date: 'dd MMM yyyy' }}
+                </td>
+
+                <!-- Actions -->
+                <td class="px-6 py-4 text-right">
+                  @if (deleteConfirmId === user._id) {
+                    <div class="flex items-center justify-end gap-2">
+                      <span class="text-xs text-gray-500">Delete?</span>
+                      <button (click)="deleteUser(user._id!)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition-colors">Yes</button>
+                      <button (click)="cancelDelete()" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg transition-colors">No</button>
+                    </div>
+                  } @else {
+                    <div class="flex items-center justify-end gap-2">
+                      <a
+                        [routerLink]="['/users/edit', user._id]"
+                        class="text-xs bg-serenity-50 hover:bg-serenity-100 text-serenity-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                      >
+                        ✏️ Edit
+                      </a>
+                      <button
+                        (click)="confirmDelete(user._id!)"
+                        class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                        [disabled]="user._id === auth.currentUser()?._id"
+                        [class.opacity-40]="user._id === auth.currentUser()?._id"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+
+            @if (filteredUsers.length === 0) {
+              <tr>
+                <td colspan="8" class="px-6 py-16 text-center text-gray-400">
+                  <p class="text-4xl mb-3">👤</p>
+                  <p class="font-medium">No users found</p>
+                  <p class="text-sm mt-1">Try adjusting your search or filter, or add a new user.</p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Footer -->
+      <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
+        Showing {{ filteredUsers.length }} of {{ users.length }} users
+      </div>
+    </div>
+  }
+</div>
