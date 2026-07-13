@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+const SRI_LANKAN_PHONE = /^0\d{9}$/;
+
 const guestSchema = new mongoose.Schema(
   {
     firstName: {
@@ -22,6 +24,14 @@ const guestSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: [true, 'Phone number is required'],
+      unique: true,
+      trim: true,
+      validate: {
+        validator(value) {
+          return SRI_LANKAN_PHONE.test(String(value || ''));
+        },
+        message: 'Please enter a valid phone number.',
+      },
     },
     address: {
       street: String,

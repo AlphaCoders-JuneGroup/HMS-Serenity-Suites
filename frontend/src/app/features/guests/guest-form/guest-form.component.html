@@ -1,0 +1,237 @@
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">
+        {{ isEditMode ? 'Update Guest' : 'Register New Guest' }}
+      </h2>
+      <p class="text-gray-500 mt-1">
+        Store contact details and identification for hotel guests
+      </p>
+    </div>
+    <a routerLink="/guests" class="btn-secondary self-start">← Back to Guests</a>
+  </div>
+
+  @if (error) {
+    <div class="card mb-5 flex items-center gap-3 bg-red-50 border-red-200 text-red-700 text-sm">
+      <span>⚠️</span> {{ error }}
+    </div>
+  }
+
+  @if (loadingGuest) {
+    <div class="empty-state text-gray-400">
+      <p class="text-4xl mb-3">⏳</p>
+      <p>Loading guest...</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="card max-w-3xl space-y-6" novalidate>
+      <div>
+        <h3 class="font-semibold text-gray-900 mb-4">Personal details</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">
+              First name <span class="text-red-500">*</span>
+            </label>
+            <input
+              formControlName="firstName"
+              placeholder="e.g. John"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('firstName')"
+              [class.border-gray-200]="!showError('firstName')"
+            />
+            @if (showError('firstName')) {
+              <p class="text-red-500 text-xs mt-1">{{ nameErrorMessage('firstName') }}</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">
+              Last name <span class="text-red-500">*</span>
+            </label>
+            <input
+              formControlName="lastName"
+              placeholder="e.g. Silva"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('lastName')"
+              [class.border-gray-200]="!showError('lastName')"
+            />
+            @if (showError('lastName')) {
+              <p class="text-red-500 text-xs mt-1">{{ nameErrorMessage('lastName') }}</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">
+              Email <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="guest@example.com"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('email')"
+              [class.border-gray-200]="!showError('email')"
+            />
+            @if (showError('email')) {
+              <p class="text-red-500 text-xs mt-1">{{ emailErrorMessage() }}</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">
+              Phone <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              formControlName="phone"
+              inputmode="numeric"
+              maxlength="10"
+              autocomplete="tel"
+              placeholder="e.g. 0771234567"
+              (input)="onPhoneInput($event)"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('phone')"
+              [class.border-gray-200]="!showError('phone')"
+            />
+            <p class="text-gray-400 text-xs mt-1">10 digits, start with 0 (e.g. 0771234567)</p>
+            @if (showError('phone')) {
+              <p class="text-red-500 text-xs mt-1">{{ phoneErrorMessage() }}</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Nationality</label>
+            <input
+              formControlName="nationality"
+              placeholder="e.g. Sri Lankan"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('nationality')"
+              [class.border-gray-200]="!showError('nationality')"
+            />
+            @if (showError('nationality')) {
+              <p class="text-red-500 text-xs mt-1">
+                Use letters only (spaces, - and ' allowed).
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="font-semibold text-gray-900 mb-4">Identification</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">ID type</label>
+            <select
+              formControlName="idType"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-serenity-500"
+            >
+              <option value="">Select ID type</option>
+              @for (t of idTypes; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">
+              ID number
+              @if (f['idType'].value) {
+                <span class="text-red-500">*</span>
+              }
+            </label>
+            <input
+              formControlName="idNumber"
+              placeholder="Enter ID / passport number"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('idNumber')"
+              [class.border-gray-200]="!showError('idNumber')"
+            />
+            @if (showError('idNumber')) {
+              <p class="text-red-500 text-xs mt-1">
+                @if (f['idNumber'].errors?.['requiredWhenType']) {
+                  ID number is required when an ID type is selected.
+                } @else if (f['idNumber'].errors?.['pattern']) {
+                  Use letters, numbers, spaces, or hyphens only.
+                } @else if (f['idNumber'].errors?.['maxlength']) {
+                  Maximum 40 characters.
+                }
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="font-semibold text-gray-900 mb-4">Contact address</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium text-gray-600 mb-1">Street</label>
+            <input
+              formControlName="street"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('street')"
+              [class.border-gray-200]="!showError('street')"
+            />
+            @if (showError('street')) {
+              <p class="text-red-500 text-xs mt-1">Maximum 120 characters.</p>
+            }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">City</label>
+            <input
+              formControlName="city"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('city')"
+              [class.border-gray-200]="!showError('city')"
+            />
+            @if (showError('city')) {
+              <p class="text-red-500 text-xs mt-1">Use letters only.</p>
+            }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">State / Province</label>
+            <input
+              formControlName="state"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('state')"
+              [class.border-gray-200]="!showError('state')"
+            />
+            @if (showError('state')) {
+              <p class="text-red-500 text-xs mt-1">Use letters only.</p>
+            }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Country</label>
+            <input
+              formControlName="country"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('country')"
+              [class.border-gray-200]="!showError('country')"
+            />
+            @if (showError('country')) {
+              <p class="text-red-500 text-xs mt-1">Use letters only.</p>
+            }
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">ZIP / Postal code</label>
+            <input
+              formControlName="zipCode"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-serenity-500"
+              [class.border-red-400]="showError('zipCode')"
+              [class.border-gray-200]="!showError('zipCode')"
+            />
+            @if (showError('zipCode')) {
+              <p class="text-red-500 text-xs mt-1">Use letters, numbers, spaces, or hyphens (max 12).</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <button type="submit" class="btn-primary" [disabled]="loading">
+          {{ loading ? 'Saving...' : isEditMode ? 'Update Guest' : 'Register Guest' }}
+        </button>
+        <a routerLink="/guests" class="btn-secondary">Cancel</a>
+      </div>
+    </form>
+  }
+</div>

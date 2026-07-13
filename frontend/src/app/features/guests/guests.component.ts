@@ -1,29 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/services/api.service';
-
-export interface Guest {
-  _id?: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  nationality?: string;
-  idType?: string;
-  idNumber?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-}
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
+import { Guest, GuestService } from '../../core/services/guest.service';
 
 @Component({
   selector: 'app-guests',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './guests.component.html',
   styleUrl: './guests.component.scss',
 })
@@ -32,7 +16,18 @@ export class GuestsComponent implements OnInit {
   filteredGuests: Guest[] = [];
   loading = true;
   error = '';
+  success = '';
   searchTerm = '';
+  deleteConfirmId = '';
+
+  constructor(
+    private guestService: GuestService,
+    private auth: AuthService
+  ) {}
+
+  get canManageGuests(): boolean {
+    return this.auth.hasRole('Admin', 'Receptionist');
+  }
 
   get withIdCount(): number {
     return this.guests.filter((g) => !!g.idType).length;
@@ -43,13 +38,12 @@ export class GuestsComponent implements OnInit {
   }
 
   get localCount(): number {
-    return this.guests.filter((g) =>
-      (g.nationality || '').toLowerCase().includes('sri') ||
-      (g.address?.country || '').toLowerCase().includes('sri')
+    return this.guests.filter(
+      (g) =>
+        (g.nationality || '').toLowerCase().includes('sri') ||
+        (g.address?.country || '').toLowerCase().includes('sri')
     ).length;
   }
-
-  constructor(private api: ApiService) {}
 
   applyFilters(): void {
     const q = this.searchTerm.trim().toLowerCase();
@@ -63,7 +57,8 @@ export class GuestsComponent implements OnInit {
         name.includes(q) ||
         g.email?.toLowerCase().includes(q) ||
         g.phone?.includes(q) ||
-        g.nationality?.toLowerCase().includes(q)
+        g.nationality?.toLowerCase().includes(q) ||
+        g.idNumber?.toLowerCase().includes(q)
       );
     });
   }
@@ -73,17 +68,46 @@ export class GuestsComponent implements OnInit {
     return parts.length ? parts.join(', ') : '—';
   }
 
-  ngOnInit(): void {
-    this.api.getGuests().subscribe({
+  confirmDelete(id: string): void {
+    this.deleteConfirmId = id;
+  }
+
+  cancelDelete(): void {
+    this.deleteConfirmId = '';
+  }
+
+  deleteGuest(id: string): void {
+    if (!this.canManageGuests) return;
+    this.guestService.deleteGuest(id).subscribe({
       next: (res) => {
-        this.guests = (res.data ?? []) as Guest[];
-        this.filteredGuests = this.guests;
+        this.guests = this.guests.filter((g) => g._id !== id);
+        this.applyFilters();
+        this.success = res.message || 'Guest deleted.';
+        this.deleteConfirmId = '';
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to delete guest';
+        this.deleteConfirmId = '';
+      },
+    });
+  }
+
+  loadGuests(): void {
+    this.loading = true;
+    this.guestService.getGuests().subscribe({
+      next: (res) => {
+        this.guests = res.data ?? [];
+        this.applyFilters();
         this.loading = false;
       },
       error: (err) => {
-        this.error = err.message || 'Failed to load guests';
+        this.error = err.error?.message || err.message || 'Failed to load guests';
         this.loading = false;
       },
     });
+  }
+
+  ngOnInit(): void {
+    this.loadGuests();
   }
 }

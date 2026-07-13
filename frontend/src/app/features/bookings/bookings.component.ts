@@ -24,6 +24,8 @@ export class BookingsComponent implements OnInit {
   success = '';
   filterStatus = '';
   actionLoadingId = '';
+  receiptBooking: Booking | null = null;
+  showReceipt = false;
 
   statuses: BookingStatus[] = [
     'Pending',
@@ -125,6 +127,86 @@ export class BookingsComponent implements OnInit {
 
   canEdit(booking: Booking): boolean {
     return this.canManageBookings && !['Checked-Out', 'Cancelled'].includes(booking.status);
+  }
+
+  canShowReceipt(booking: Booking): boolean {
+    return booking.paymentStatus === 'Paid' && booking.status !== 'Cancelled';
+  }
+
+  canMarkPaid(booking: Booking): boolean {
+    return (
+      this.canManageBookings &&
+      booking.status !== 'Cancelled' &&
+      booking.paymentStatus !== 'Paid'
+    );
+  }
+
+  nights(booking: Booking): number {
+    const start = new Date(booking.checkIn);
+    const end = new Date(booking.checkOut);
+    const ms = end.setHours(0, 0, 0, 0) - start.setHours(0, 0, 0, 0);
+    return Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
+  }
+
+  guestEmail(booking: Booking): string {
+    if (!booking.guest || typeof booking.guest === 'string') return '—';
+    return booking.guest.email || '—';
+  }
+
+  guestPhone(booking: Booking): string {
+    if (!booking.guest || typeof booking.guest === 'string') return '—';
+    return booking.guest.phone || '—';
+  }
+
+  roomType(booking: Booking): string {
+    if (!booking.room || typeof booking.room === 'string') return '—';
+    return booking.room.type || '—';
+  }
+
+  roomNumber(booking: Booking): string {
+    if (!booking.room || typeof booking.room === 'string') return '—';
+    return booking.room.roomNumber || '—';
+  }
+
+  receiptId(booking: Booking): string {
+    return (booking._id || '').slice(-8).toUpperCase() || 'N/A';
+  }
+
+  openReceipt(booking: Booking): void {
+    if (!this.canShowReceipt(booking)) {
+      this.error = 'Receipt is available only after full payment is completed.';
+      return;
+    }
+    this.receiptBooking = booking;
+    this.showReceipt = true;
+  }
+
+  closeReceipt(): void {
+    this.showReceipt = false;
+    this.receiptBooking = null;
+  }
+
+  printReceipt(): void {
+    window.print();
+  }
+
+  /** Mark full payment as Paid, then generate receipt */
+  markPaidAndGenerateReceipt(booking: Booking): void {
+    if (!booking._id || !this.canMarkPaid(booking)) return;
+    this.actionLoadingId = booking._id;
+    this.error = '';
+    this.bookingService.updateBooking(booking._id, { paymentStatus: 'Paid' }).subscribe({
+      next: (res) => {
+        this.replaceBooking(res.data);
+        this.success = 'Full payment recorded. Receipt generated.';
+        this.actionLoadingId = '';
+        this.openReceipt(res.data);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to record payment';
+        this.actionLoadingId = '';
+      },
+    });
   }
 
   confirm(booking: Booking): void {

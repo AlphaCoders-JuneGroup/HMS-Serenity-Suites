@@ -5,8 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "lsof -ti :5001 | xargs kill -9 2>/dev/null; nodemon server.js",
-    "kill-port": "lsof -ti :5001 | xargs kill -9 2>/dev/null && echo 'Port 5001 cleared'"
+    "dev": "nodemon server.js"
   },
   "keywords": [
     "hotel",
