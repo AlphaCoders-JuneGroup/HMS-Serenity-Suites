@@ -1,39 +1,131 @@
-<div class="p-8">
-  <div class="flex items-center justify-between mb-8">
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-      <h2 class="text-2xl font-bold text-gray-900">Guests</h2>
-      <p class="text-gray-500 mt-1">Manage guest profiles and information</p>
+      <h2 class="text-2xl font-bold text-gray-900">Guest Management</h2>
+      <p class="text-gray-500 mt-1">Manage guest profiles and contact information</p>
     </div>
-    <button class="btn-primary">+ Add Guest</button>
+    <button class="btn-primary self-start">+ Add Guest</button>
+  </div>
+
+  <!-- Related summary cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-green-50">👥</div>
+        <div>
+          <p class="text-sm text-gray-500">Total Guests</p>
+          <p class="text-2xl font-bold text-green-600">{{ guests.length }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-serenity-50">🪪</div>
+        <div>
+          <p class="text-sm text-gray-500">ID Verified</p>
+          <p class="text-2xl font-bold text-serenity-700">{{ withIdCount }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-violet-50">🌍</div>
+        <div>
+          <p class="text-sm text-gray-500">Nationalities</p>
+          <p class="text-2xl font-bold text-violet-600">{{ nationalityCount }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-amber-50">🏠</div>
+        <div>
+          <p class="text-sm text-gray-500">Local Guests</p>
+          <p class="text-2xl font-bold text-amber-600">{{ localCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="flex flex-col sm:flex-row gap-4 sm:items-center">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="applyFilters()"
+        placeholder="Search by name, email, phone, or nationality..."
+        class="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm"
+      />
+      <span class="text-sm text-gray-400 whitespace-nowrap">
+        {{ filteredGuests.length }} of {{ guests.length }} guests
+      </span>
+    </div>
   </div>
 
   @if (loading) {
-    <div class="text-center text-gray-400 py-12">Loading guests...</div>
+    <div class="empty-state text-gray-400">
+      <p class="text-4xl mb-3">⏳</p>
+      <p>Loading guests...</p>
+    </div>
   } @else if (error) {
-    <div class="card text-red-500">{{ error }}</div>
-  } @else if (guests.length === 0) {
-    <div class="card text-center py-12">
-      <p class="text-gray-400 text-lg">No guests found</p>
-      <p class="text-gray-300 text-sm mt-2">Register your first guest to get started</p>
+    <div class="card flex items-center gap-3 bg-red-50 border-red-200 text-red-700">
+      <span>⚠️</span> {{ error }}
     </div>
   } @else {
-    <div class="card overflow-x-auto">
-      <table class="w-full text-left">
-        <thead>
-          <tr class="border-b border-gray-200">
-            <th class="pb-3 font-semibold text-gray-600">Guest Data</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (guest of guests; track $index) {
-            <tr class="border-b border-gray-100">
-              <td class="py-3">
-                <pre class="text-xs text-gray-600">{{ guest | json }}</pre>
-              </td>
+    <div class="card overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-100">
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Guest</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Contact</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Location</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">ID</th>
+              <th class="text-left px-6 py-4 font-semibold text-gray-600">Nationality</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (guest of filteredGuests; track guest._id || guest.email) {
+              <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                      {{ guest.firstName.charAt(0).toUpperCase() || '?' }}
+                    </div>
+                    <div>
+                      <p class="font-medium text-gray-800">{{ guest.firstName }} {{ guest.lastName }}</p>
+                      <p class="text-xs text-gray-400">{{ guest.email }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-gray-600">{{ guest.phone || '—' }}</td>
+                <td class="px-6 py-4 text-gray-500">{{ location(guest) }}</td>
+                <td class="px-6 py-4">
+                  @if (guest.idType) {
+                    <span class="badge-neutral">{{ guest.idType }}</span>
+                    <p class="text-xs text-gray-400 mt-1">{{ guest.idNumber || '—' }}</p>
+                  } @else {
+                    <span class="text-gray-400">—</span>
+                  }
+                </td>
+                <td class="px-6 py-4 text-gray-500">{{ guest.nationality || '—' }}</td>
+              </tr>
+            }
+
+            @if (filteredGuests.length === 0) {
+              <tr>
+                <td colspan="5" class="px-6 py-16 text-center text-gray-400">
+                  <p class="text-4xl mb-3">👥</p>
+                  <p class="font-medium text-gray-500">No guests found</p>
+                  <p class="text-sm mt-1">
+                    {{ searchTerm ? 'Try a different search' : 'Register your first guest to get started' }}
+                  </p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   }
 </div>

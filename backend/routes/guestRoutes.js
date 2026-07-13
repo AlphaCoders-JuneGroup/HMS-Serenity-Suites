@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect, authorize } = require('../middleware/authMiddleware');
 const {
   getAllGuests,
   getGuestById,
@@ -7,6 +8,11 @@ const {
   updateGuest,
   deleteGuest,
 } = require('../controllers/guestController');
+
+const staffRoles = ['Admin', 'Manager', 'Receptionist'];
+
+router.use(protect);
+router.use(authorize(...staffRoles));
 
 router.get('/', getAllGuests);
 router.get('/:id', getGuestById);

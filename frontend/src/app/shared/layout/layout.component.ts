@@ -29,25 +29,61 @@ export class LayoutComponent {
       path: '/dashboard',
       label: 'Dashboard',
       icon: '📊',
-      roles: [], // all roles
-    },
-    {
-      path: '/rooms',
-      label: 'Rooms',
-      icon: '🛏️',
-      roles: ['Admin', 'Manager', 'Receptionist', 'Housekeeping Manager'],
+      roles: [],
     },
     {
       path: '/guests',
-      label: 'Guests',
+      label: 'Guest Management',
       icon: '👥',
       roles: ['Admin', 'Manager', 'Receptionist'],
     },
     {
+      path: '/rooms',
+      label: 'Room Management',
+      icon: '🛏️',
+      roles: ['Admin', 'Manager', 'Receptionist', 'Housekeeping Manager'],
+    },
+    {
       path: '/bookings',
-      label: 'Bookings',
+      label: 'Booking Management',
       icon: '📅',
       roles: ['Admin', 'Manager', 'Receptionist'],
+    },
+    {
+      path: '/check-in',
+      label: 'Check-in / Check-out',
+      icon: '🔑',
+      roles: ['Admin', 'Manager', 'Receptionist'],
+    },
+    {
+      path: '/billing',
+      label: 'Billing & Payments',
+      icon: '💳',
+      roles: ['Admin', 'Manager', 'Receptionist'],
+    },
+    {
+      path: '/restaurant',
+      label: 'Restaurant',
+      icon: '🍽️',
+      roles: ['Admin', 'Manager', 'Restaurant Staff'],
+    },
+    {
+      path: '/housekeeping',
+      label: 'Housekeeping',
+      icon: '🧹',
+      roles: ['Admin', 'Manager', 'Housekeeping Manager'],
+    },
+    {
+      path: '/events',
+      label: 'Event Management',
+      icon: '🎉',
+      roles: ['Admin', 'Manager', 'Event Coordinator'],
+    },
+    {
+      path: '/reports',
+      label: 'Reporting & Analytics',
+      icon: '📈',
+      roles: ['Admin', 'Manager'],
     },
   ];
 

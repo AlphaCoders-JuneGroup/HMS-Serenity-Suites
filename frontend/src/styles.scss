@@ -20,4 +20,40 @@
   .card {
     @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
   }
+
+  .page-shell {
+    @apply p-6 md:p-8 max-w-7xl mx-auto;
+  }
+
+  .stat-icon {
+    @apply w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .badge-success {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700;
+  }
+
+  .badge-danger {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-serenity-100 text-serenity-700;
+  }
+
+  .badge-neutral {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600;
+  }
+
+  .empty-state {
+    @apply card text-center py-16;
+  }
 }

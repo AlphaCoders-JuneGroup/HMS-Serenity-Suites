@@ -1,67 +1,112 @@
-<div class="p-8">
-  <div class="mb-8">
-    <h2 class="text-2xl font-bold text-gray-900">Dashboard</h2>
-    <p class="text-gray-500 mt-1">Welcome to Serenity Suites Hotel Management System</p>
+<div class="page-shell">
+  <!-- Welcome banner -->
+  <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-serenity-800 via-serenity-700 to-serenity-600 text-white p-6 md:p-8 mb-8 shadow-sm">
+    <div
+      class="absolute inset-0 opacity-20"
+      style="background-image: radial-gradient(circle at 20% 20%, white 0, transparent 40%), radial-gradient(circle at 80% 0%, #7dd3fc 0, transparent 35%);"
+    ></div>
+    <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <p class="text-serenity-200 text-sm font-medium">{{ today | date: 'EEEE, d MMMM y' }}</p>
+        <h2 class="text-2xl md:text-3xl font-bold mt-1">
+          {{ greeting }}, {{ firstName }}
+        </h2>
+        <p class="text-serenity-100 mt-2 max-w-xl">
+          Here’s a quick look at hotel operations today. Open any module below to get work done.
+        </p>
+      </div>
+      <div class="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/15">
+        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold">
+          {{ initials }}
+        </div>
+        <div>
+          <p class="text-sm font-semibold">{{ auth.currentUser()?.name }}</p>
+          <p class="text-xs text-serenity-200">{{ auth.currentUser()?.role }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="card">
-      <div class="flex items-center justify-between">
+  <!-- Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+    <a routerLink="/rooms" class="card hover:shadow-md hover:border-serenity-200 transition-all group">
+      <div class="flex items-center gap-4">
+        <div class="stat-icon bg-serenity-50 group-hover:scale-105 transition-transform">🛏️</div>
         <div>
           <p class="text-sm text-gray-500">Total Rooms</p>
-          <p class="text-3xl font-bold text-serenity-700 mt-1">{{ roomCount }}</p>
+          <p class="text-3xl font-bold text-serenity-700 mt-0.5">{{ roomCount }}</p>
+          <p class="text-xs text-gray-400 mt-1">{{ occupancyRate }}% occupancy</p>
         </div>
-        <span class="text-4xl">🛏️</span>
       </div>
-    </div>
+    </a>
 
-    <div class="card">
-      <div class="flex items-center justify-between">
+    <a routerLink="/guests" class="card hover:shadow-md hover:border-green-200 transition-all group">
+      <div class="flex items-center gap-4">
+        <div class="stat-icon bg-green-50 group-hover:scale-105 transition-transform">👥</div>
         <div>
           <p class="text-sm text-gray-500">Total Guests</p>
-          <p class="text-3xl font-bold text-green-600 mt-1">{{ guestCount }}</p>
+          <p class="text-3xl font-bold text-green-600 mt-0.5">{{ guestCount }}</p>
+          <p class="text-xs text-gray-400 mt-1">Registered profiles</p>
         </div>
-        <span class="text-4xl">👥</span>
       </div>
-    </div>
+    </a>
 
-    <div class="card">
-      <div class="flex items-center justify-between">
+    <a routerLink="/bookings" class="card hover:shadow-md hover:border-violet-200 transition-all group">
+      <div class="flex items-center gap-4">
+        <div class="stat-icon bg-violet-50 group-hover:scale-105 transition-transform">📅</div>
         <div>
           <p class="text-sm text-gray-500">Active Bookings</p>
-          <p class="text-3xl font-bold text-purple-600 mt-1">{{ bookingCount }}</p>
+          <p class="text-3xl font-bold text-violet-600 mt-0.5">{{ bookingCount }}</p>
+          <p class="text-xs text-gray-400 mt-1">All reservations</p>
         </div>
-        <span class="text-4xl">📅</span>
       </div>
-    </div>
+    </a>
 
-    <div class="card">
-      <div class="flex items-center justify-between">
+    <a routerLink="/rooms" class="card hover:shadow-md hover:border-emerald-200 transition-all group">
+      <div class="flex items-center gap-4">
+        <div class="stat-icon bg-emerald-50 group-hover:scale-105 transition-transform">✅</div>
         <div>
-          <p class="text-sm text-gray-500">API Status</p>
-          <p
-            class="text-lg font-semibold mt-1"
-            [class.text-green-600]="apiStatus === 'OK'"
-            [class.text-red-500]="apiStatus !== 'OK'"
-          >
-            {{ apiStatus }}
+          <p class="text-sm text-gray-500">Available Rooms</p>
+          <p class="text-3xl font-bold text-emerald-600 mt-0.5">{{ availableRooms }}</p>
+          <p class="text-xs text-gray-400 mt-1">
+            {{ todayCheckIns }} check-in{{ todayCheckIns === 1 ? '' : 's' }} today
           </p>
         </div>
-        <span class="text-4xl">🔌</span>
       </div>
-    </div>
+    </a>
   </div>
 
-  @if (loading) {
-    <div class="text-center text-gray-400 py-12">Loading dashboard data...</div>
-  } @else {
-    <div class="card">
-      <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
-      <div class="flex flex-wrap gap-3">
-        <a routerLink="/rooms" class="btn-primary">Manage Rooms</a>
-        <a routerLink="/guests" class="btn-primary">Manage Guests</a>
-        <a routerLink="/bookings" class="btn-primary">View Bookings</a>
-      </div>
+  <!-- Modules -->
+  <div class="mb-5 flex items-end justify-between gap-4">
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900">System Modules</h3>
+      <p class="text-sm text-gray-500 mt-1">Choose a module to continue your work</p>
     </div>
-  }
+    <span class="badge-info hidden sm:inline-flex">{{ modules.length }} available</span>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
+    @for (mod of modules; track mod.path) {
+      <a
+        [routerLink]="mod.path"
+        class="card group hover:shadow-md hover:border-serenity-200 transition-all duration-200 hover:-translate-y-0.5"
+      >
+        <div class="flex items-start gap-4">
+          <div class="stat-icon {{ mod.accent }}">{{ mod.icon }}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <h4 class="font-semibold text-gray-900 group-hover:text-serenity-700 transition-colors">
+                {{ mod.title }}
+              </h4>
+              <span class="text-serenity-400 group-hover:text-serenity-600 transition-colors text-sm">→</span>
+            </div>
+            <p class="text-sm text-gray-500 mt-1 leading-relaxed">{{ mod.description }}</p>
+            <p class="text-xs font-medium text-serenity-600 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              Open module
+            </p>
+          </div>
+        </div>
+      </a>
+    }
+  </div>
 </div>

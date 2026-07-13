@@ -1,26 +1,135 @@
-<div class="p-8">
-  <div class="flex items-center justify-between mb-8">
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-      <h2 class="text-2xl font-bold text-gray-900">Rooms</h2>
-      <p class="text-gray-500 mt-1">Manage hotel rooms and availability</p>
+      <h2 class="text-2xl font-bold text-gray-900">Room Management</h2>
+      <p class="text-gray-500 mt-1">Manage hotel rooms, types, and availability</p>
     </div>
-    <button class="btn-primary">+ Add Room</button>
+    <button class="btn-primary self-start">+ Add Room</button>
+  </div>
+
+  <!-- Related summary cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-serenity-50">🛏️</div>
+        <div>
+          <p class="text-sm text-gray-500">Total Rooms</p>
+          <p class="text-2xl font-bold text-serenity-700">{{ rooms.length }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-green-50">✅</div>
+        <div>
+          <p class="text-sm text-gray-500">Available</p>
+          <p class="text-2xl font-bold text-green-600">{{ availableCount }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-violet-50">👤</div>
+        <div>
+          <p class="text-sm text-gray-500">Occupied</p>
+          <p class="text-2xl font-bold text-violet-600">{{ occupiedCount }}</p>
+          <p class="text-xs text-gray-400">{{ occupancyRate }}% occupancy</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex items-center gap-3">
+        <div class="stat-icon bg-amber-50">🛠️</div>
+        <div>
+          <p class="text-sm text-gray-500">Maintenance / Reserved</p>
+          <p class="text-2xl font-bold text-amber-600">{{ maintenanceCount + reservedCount }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary chips -->
+  <div class="flex flex-wrap gap-3 mb-6">
+    <button
+      type="button"
+      (click)="filterStatus = ''"
+      class="badge transition-colors cursor-pointer"
+      [class]="filterStatus === '' ? 'bg-serenity-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-serenity-300'"
+    >
+      All {{ rooms.length }}
+    </button>
+    <button
+      type="button"
+      (click)="filterStatus = 'Available'"
+      class="badge transition-colors cursor-pointer"
+      [class]="filterStatus === 'Available' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100'"
+    >
+      Available {{ availableCount }}
+    </button>
+    <button
+      type="button"
+      (click)="filterStatus = 'Occupied'"
+      class="badge transition-colors cursor-pointer"
+      [class]="filterStatus === 'Occupied' ? 'bg-serenity-600 text-white' : 'bg-serenity-50 text-serenity-700 hover:bg-serenity-100'"
+    >
+      Occupied {{ occupiedCount }}
+    </button>
   </div>
 
   @if (loading) {
-    <div class="text-center text-gray-400 py-12">Loading rooms...</div>
+    <div class="empty-state text-gray-400">
+      <p class="text-4xl mb-3">⏳</p>
+      <p>Loading rooms...</p>
+    </div>
   } @else if (error) {
-    <div class="card text-red-500">{{ error }}</div>
-  } @else if (rooms.length === 0) {
-    <div class="card text-center py-12">
-      <p class="text-gray-400 text-lg">No rooms found</p>
-      <p class="text-gray-300 text-sm mt-2">Add your first room to get started</p>
+    <div class="card flex items-center gap-3 bg-red-50 border-red-200 text-red-700">
+      <span>⚠️</span> {{ error }}
+    </div>
+  } @else if (filteredRooms.length === 0) {
+    <div class="empty-state">
+      <p class="text-4xl mb-3">🛏️</p>
+      <p class="text-gray-500 text-lg font-medium">No rooms found</p>
+      <p class="text-gray-400 text-sm mt-2">
+        {{ filterStatus ? 'Try a different status filter' : 'Add your first room to get started' }}
+      </p>
     </div>
   } @else {
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      @for (room of rooms; track $index) {
-        <div class="card">
-          <pre class="text-xs text-gray-600 overflow-auto">{{ room | json }}</pre>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      @for (room of filteredRooms; track room._id || room.roomNumber) {
+        <div class="card hover:shadow-md transition-shadow flex flex-col">
+          <div class="flex items-start justify-between gap-3 mb-4">
+            <div class="flex items-center gap-3">
+              <div class="stat-icon bg-serenity-50 text-serenity-700 text-lg font-bold">
+                {{ room.roomNumber }}
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Room {{ room.roomNumber }}</h3>
+                <p class="text-sm text-gray-500">{{ room.type }} · Floor {{ room.floor }}</p>
+              </div>
+            </div>
+            <span [class]="statusClass(room.status)">{{ room.status }}</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+            <div class="rounded-lg bg-gray-50 px-3 py-2">
+              <p class="text-xs text-gray-400">Price / night</p>
+              <p class="font-semibold text-gray-800">{{ room.price | currency: 'LKR':'symbol':'1.0-0' }}</p>
+            </div>
+            <div class="rounded-lg bg-gray-50 px-3 py-2">
+              <p class="text-xs text-gray-400">Capacity</p>
+              <p class="font-semibold text-gray-800">{{ room.capacity }} guests</p>
+            </div>
+          </div>
+
+          @if (room.amenities?.length) {
+            <div class="flex flex-wrap gap-1.5 mt-auto">
+              @for (amenity of room.amenities; track amenity) {
+                <span class="badge-neutral">{{ amenity }}</span>
+              }
+            </div>
+          } @else if (room.description) {
+            <p class="text-sm text-gray-500 line-clamp-2 mt-auto">{{ room.description }}</p>
+          }
         </div>
       }
     </div>

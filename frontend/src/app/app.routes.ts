@@ -4,6 +4,8 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { RoomsComponent } from './features/rooms/rooms.component';
 import { GuestsComponent } from './features/guests/guests.component';
 import { BookingsComponent } from './features/bookings/bookings.component';
+import { BookingFormComponent } from './features/bookings/booking-form/booking-form.component';
+import { ModulePageComponent } from './features/module-page/module-page.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { UnauthorizedComponent } from './features/auth/unauthorized/unauthorized.component';
@@ -18,10 +20,17 @@ import { roleGuard } from './core/guards/role.guard';
  * Route              | Admin | Manager | Receptionist | HK Mgr | Rest | Event
  * ─────────────────────────────────────────────────────────────────────────────
  * /dashboard         |  ✅   |   ✅    |     ✅       |   ✅   |  ✅  |  ✅
- * /users             |  ✅   |   ❌    |     ❌       |   ❌   |  ❌  |  ❌
- * /rooms             |  ✅   |   ✅    |     ✅       |   ✅   |  ❌  |  ❌
  * /guests            |  ✅   |   ✅    |     ✅       |   ❌   |  ❌  |  ❌
- * /bookings          |  ✅   |   ✅    |     ✅       |   ❌   |  ❌  |  ❌
+ * /rooms             |  ✅   |   ✅    |     ✅       |   ✅   |  ❌  |  ❌
+ * /bookings          |  ✅   |  view   |     ✅       |   ❌   |  ❌  |  ❌
+ * /bookings/new|edit |  ✅   |   ❌    |     ✅       |   ❌   |  ❌  |  ❌
+ * /check-in          |  ✅   |   ✅    |     ✅       |   ❌   |  ❌  |  ❌
+ * /billing           |  ✅   |   ✅    |     ✅       |   ❌   |  ❌  |  ❌
+ * /restaurant        |  ✅   |   ✅    |     ❌       |   ❌   |  ✅  |  ❌
+ * /housekeeping      |  ✅   |   ✅    |     ❌       |   ✅   |  ❌  |  ❌
+ * /events            |  ✅   |   ✅    |     ❌       |   ❌   |  ❌  |  ✅
+ * /reports           |  ✅   |   ✅    |     ❌       |   ❌   |  ❌  |  ❌
+ * /users             |  ✅   |   ❌    |     ❌       |   ❌   |  ❌  |  ❌
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -39,28 +48,115 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 
-      // ── All roles can access the dashboard ────────────────────────────────
       { path: 'dashboard', component: DashboardComponent },
 
-      // ── Room & Housekeeping: Admin, Manager, Receptionist, Housekeeping Mgr
-      {
-        path: 'rooms',
-        canActivate: [roleGuard('Admin', 'Manager', 'Receptionist', 'Housekeeping Manager')],
-        component: RoomsComponent,
-      },
-
-      // ── Guests: Admin, Manager, Receptionist
+      // 2. Guest Management
       {
         path: 'guests',
         canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
         component: GuestsComponent,
       },
 
-      // ── Bookings: Admin, Manager, Receptionist
+      // 3. Room Management
+      {
+        path: 'rooms',
+        canActivate: [roleGuard('Admin', 'Manager', 'Receptionist', 'Housekeeping Manager')],
+        component: RoomsComponent,
+      },
+
+      // 4. Booking Management (Manager = view only)
       {
         path: 'bookings',
         canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
         component: BookingsComponent,
+      },
+      {
+        path: 'bookings/new',
+        canActivate: [roleGuard('Admin', 'Receptionist')],
+        component: BookingFormComponent,
+      },
+      {
+        path: 'bookings/edit/:id',
+        canActivate: [roleGuard('Admin', 'Receptionist')],
+        component: BookingFormComponent,
+      },
+
+      // 5. Check-in / Check-out Management
+      {
+        path: 'check-in',
+        canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
+        component: ModulePageComponent,
+        data: {
+          title: 'Check-in / Check-out Management',
+          description: 'Manage guest arrivals, departures, and room assignments',
+          icon: '🔑',
+          moduleKey: 'check-in',
+        },
+      },
+
+      // 6. Billing & Payment Management
+      {
+        path: 'billing',
+        canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
+        component: ModulePageComponent,
+        data: {
+          title: 'Billing & Payment Management',
+          description: 'Handle invoices, payments, and guest folios',
+          icon: '💳',
+          moduleKey: 'billing',
+        },
+      },
+
+      // 7. Restaurant Management
+      {
+        path: 'restaurant',
+        canActivate: [roleGuard('Admin', 'Manager', 'Restaurant Staff')],
+        component: ModulePageComponent,
+        data: {
+          title: 'Restaurant Management',
+          description: 'Manage dining orders, menus, and restaurant services',
+          icon: '🍽️',
+          moduleKey: 'restaurant',
+        },
+      },
+
+      // 8. Housekeeping Management
+      {
+        path: 'housekeeping',
+        canActivate: [roleGuard('Admin', 'Manager', 'Housekeeping Manager')],
+        component: ModulePageComponent,
+        data: {
+          title: 'Housekeeping Management',
+          description: 'Track room cleaning status and housekeeping tasks',
+          icon: '🧹',
+          moduleKey: 'housekeeping',
+        },
+      },
+
+      // 9. Event Management
+      {
+        path: 'events',
+        canActivate: [roleGuard('Admin', 'Manager', 'Event Coordinator')],
+        component: ModulePageComponent,
+        data: {
+          title: 'Event Management',
+          description: 'Plan and manage hotel events and conferences',
+          icon: '🎉',
+          moduleKey: 'events',
+        },
+      },
+
+      // 10. Reporting & Analytics
+      {
+        path: 'reports',
+        canActivate: [roleGuard('Admin', 'Manager')],
+        component: ModulePageComponent,
+        data: {
+          title: 'Reporting & Analytics',
+          description: 'View occupancy, revenue, and performance reports',
+          icon: '📈',
+          moduleKey: 'reports',
+        },
       },
 
       // ── User Management: Admin only ────────────────────────────────────────
