@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
+  FormsModule,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -22,7 +23,7 @@ import {
 @Component({
   selector: 'app-booking-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, CurrencyPipe, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, CurrencyPipe, DatePipe],
   templateUrl: './booking-form.component.html',
 })
 export class BookingFormComponent implements OnInit {
@@ -41,11 +42,24 @@ export class BookingFormComponent implements OnInit {
   availableRooms: BookingRoom[] = [];
   selectedRoom: BookingRoom | null = null;
   nights = 0;
+  stayHours = 0;
   estimatedTotal = 0;
+  earlyCheckInFee = 0;
+  lateCheckOutFee = 0;
+  baseAmount = 0;
+  discountAmount = 0;
   guestHistory: Booking[] = [];
   historyGuestName = '';
+  groupMode = false;
+  selectedRoomIds: string[] = [];
 
   readonly idTypes = ['Passport', 'National ID', 'Driving License'];
+  /** Default hotel check-in / check-out times */
+  readonly defaultCheckInTime = '14:00';
+  readonly defaultCheckOutTime = '12:00';
+  readonly FEE_RATE = 0.25;
+  readonly STANDARD_CHECK_IN_HOUR = 14;
+  readonly STANDARD_CHECK_OUT_HOUR = 12;
 
   constructor(
     private fb: FormBuilder,
@@ -60,6 +74,12 @@ export class BookingFormComponent implements OnInit {
     this.buildForms();
     this.loadGuests();
 
+    const preselectGuest = this.route.snapshot.queryParamMap.get('guest');
+    if (preselectGuest && !this.isEditMode) {
+      this.form.patchValue({ guest: preselectGuest });
+      this.loadGuestHistory(preselectGuest);
+    }
+
     if (this.isEditMode) {
       this.loadBooking();
     } else {
@@ -73,13 +93,17 @@ export class BookingFormComponent implements OnInit {
 
     this.form = this.fb.group({
       guest: ['', Validators.required],
-      room: ['', Validators.required],
+      room: [''],
       checkIn: [tomorrow, Validators.required],
+      checkInTime: [this.defaultCheckInTime, Validators.required],
       checkOut: [dayAfter, Validators.required],
+      checkOutTime: [this.defaultCheckOutTime, Validators.required],
       numberOfGuests: [1, [Validators.required, Validators.min(1)]],
       specialRequests: [''],
       paymentStatus: ['Pending'],
       status: ['Pending'],
+      discountPercent: [0, [Validators.min(0), Validators.max(100)]],
+      promoCode: [''],
     });
 
     this.guestForm = this.fb.group({
@@ -151,11 +175,15 @@ export class BookingFormComponent implements OnInit {
           guest: guestId,
           room: roomId,
           checkIn: this.toDateInput(new Date(b.checkIn)),
+          checkInTime: this.toTimeInput(new Date(b.checkIn)),
           checkOut: this.toDateInput(new Date(b.checkOut)),
+          checkOutTime: this.toTimeInput(new Date(b.checkOut)),
           numberOfGuests: b.numberOfGuests || 1,
           specialRequests: b.specialRequests || '',
           paymentStatus: b.paymentStatus,
           status: b.status,
+          discountPercent: b.discountPercent || 0,
+          promoCode: b.promoCode || '',
         });
 
         if (typeof b.room !== 'string' && b.room) {
@@ -198,22 +226,24 @@ export class BookingFormComponent implements OnInit {
   checkAvailability(): void {
     this.error = '';
     this.success = '';
-    const { checkIn, checkOut } = this.form.value;
+    const checkInAt = this.getCheckInDateTime();
+    const checkOutAt = this.getCheckOutDateTime();
 
-    if (!checkIn || !checkOut) {
-      this.error = 'Select check-in and check-out dates first.';
+    if (!checkInAt || !checkOutAt) {
+      this.error = 'Select check-in and check-out date and time first.';
       return;
     }
-    if (new Date(checkOut) <= new Date(checkIn)) {
-      this.error = 'Check-out must be after check-in.';
+    if (new Date(checkOutAt) <= new Date(checkInAt)) {
+      this.error = 'Check-out must be after check-in (date and time).';
       return;
     }
 
     this.checkingAvailability = true;
-    this.bookingService.checkAvailability(checkIn, checkOut).subscribe({
+    this.bookingService.checkAvailability(checkInAt, checkOutAt).subscribe({
       next: (res) => {
         this.availableRooms = res.data ?? [];
         this.nights = res.nights;
+        this.stayHours = res.hours ?? this.stayHours;
         this.checkingAvailability = false;
 
         const currentRoom = this.form.value.room;
@@ -224,8 +254,8 @@ export class BookingFormComponent implements OnInit {
 
         this.success =
           this.availableRooms.length > 0
-            ? `${this.availableRooms.length} room(s) available for ${this.nights} night(s).`
-            : 'No rooms available for the selected dates.';
+            ? `${this.availableRooms.length} room(s) available for ${this.stayHours}h (${this.nights} night(s)).`
+            : 'No rooms available for the selected dates/times.';
         this.updateEstimate();
       },
       error: (err) => {
@@ -241,14 +271,75 @@ export class BookingFormComponent implements OnInit {
     this.updateEstimate();
   }
 
-  updateEstimate(): void {
-    const { checkIn, checkOut } = this.form.value;
-    if (checkIn && checkOut) {
-      const ms =
-        new Date(checkOut).setHours(0, 0, 0, 0) - new Date(checkIn).setHours(0, 0, 0, 0);
-      this.nights = Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
+  toggleGroupRoom(roomId: string, checked: boolean): void {
+    if (checked) {
+      if (!this.selectedRoomIds.includes(roomId)) this.selectedRoomIds = [...this.selectedRoomIds, roomId];
+    } else {
+      this.selectedRoomIds = this.selectedRoomIds.filter((id) => id !== roomId);
     }
-    this.estimatedTotal = this.selectedRoom ? this.nights * (this.selectedRoom.price || 0) : 0;
+    this.updateEstimate();
+  }
+
+  isGroupRoomSelected(roomId: string): boolean {
+    return this.selectedRoomIds.includes(roomId);
+  }
+
+  updateEstimate(): void {
+    const checkInAt = this.getCheckInDateTime();
+    const checkOutAt = this.getCheckOutDateTime();
+    const discount = Number(this.form.value.discountPercent) || 0;
+
+    if (checkInAt && checkOutAt) {
+      const start = new Date(checkInAt);
+      const end = new Date(checkOutAt);
+      const ms = end.getTime() - start.getTime();
+      if (ms > 0) {
+        this.stayHours = Math.round((ms / (1000 * 60 * 60)) * 10) / 10;
+        this.nights = Math.max(1, Math.ceil(this.stayHours / 24));
+      } else {
+        this.stayHours = 0;
+        this.nights = 0;
+      }
+
+      const inMin = start.getHours() * 60 + start.getMinutes();
+      const outMin = end.getHours() * 60 + end.getMinutes();
+
+      const roomsForEstimate = this.groupMode
+        ? this.availableRooms.filter((r) => r._id && this.selectedRoomIds.includes(r._id))
+        : this.selectedRoom
+          ? [this.selectedRoom]
+          : [];
+
+      let base = 0;
+      let early = 0;
+      let late = 0;
+      for (const room of roomsForEstimate) {
+        const price = room.price || 0;
+        base += this.nights * price;
+        if (inMin < this.STANDARD_CHECK_IN_HOUR * 60) early += Math.round(price * this.FEE_RATE);
+        if (outMin > this.STANDARD_CHECK_OUT_HOUR * 60) late += Math.round(price * this.FEE_RATE);
+      }
+      this.baseAmount = base;
+      this.earlyCheckInFee = early;
+      this.lateCheckOutFee = late;
+      const subtotal = base + early + late;
+      this.discountAmount = Math.round((subtotal * discount) / 100);
+      this.estimatedTotal = Math.max(0, subtotal - this.discountAmount);
+    } else {
+      this.estimatedTotal = 0;
+    }
+  }
+
+  getCheckInDateTime(): string | null {
+    const { checkIn, checkInTime } = this.form.value;
+    if (!checkIn || !checkInTime) return null;
+    return this.combineDateAndTime(checkIn, checkInTime);
+  }
+
+  getCheckOutDateTime(): string | null {
+    const { checkOut, checkOutTime } = this.form.value;
+    if (!checkOut || !checkOutTime) return null;
+    return this.combineDateAndTime(checkOut, checkOutTime);
   }
 
   registerGuest(): void {
@@ -308,8 +399,19 @@ export class BookingFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) {
+    if (this.form.get('guest')?.invalid || this.form.get('checkIn')?.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+
+    const checkInAt = this.getCheckInDateTime();
+    const checkOutAt = this.getCheckOutDateTime();
+    if (!checkInAt || !checkOutAt) {
+      this.error = 'Check-in and check-out date/time are required.';
+      return;
+    }
+    if (new Date(checkOutAt) <= new Date(checkInAt)) {
+      this.error = 'Check-out must be after check-in (date and time).';
       return;
     }
 
@@ -318,10 +420,61 @@ export class BookingFormComponent implements OnInit {
       return;
     }
 
+    this.updateEstimate();
     this.loading = true;
     this.error = '';
+
+    const v = this.form.value;
+
+    if (!this.isEditMode && this.groupMode) {
+      if (this.selectedRoomIds.length < 2) {
+        this.error = 'Select at least 2 rooms for a group booking.';
+        this.loading = false;
+        return;
+      }
+      this.bookingService
+        .createGroupBooking({
+          guest: v.guest,
+          rooms: this.selectedRoomIds,
+          checkIn: checkInAt,
+          checkOut: checkOutAt,
+          numberOfGuests: v.numberOfGuests,
+          specialRequests: v.specialRequests,
+          discountPercent: v.discountPercent || 0,
+          promoCode: v.promoCode || '',
+          status: v.status,
+        })
+        .subscribe({
+          next: (res) => {
+            this.loading = false;
+            this.success = `Group ${res.groupId} created (${res.count} rooms).`;
+            this.router.navigate(['/bookings']);
+          },
+          error: (err) => {
+            this.error = err.error?.message || 'Failed to create group booking';
+            this.loading = false;
+          },
+        });
+      return;
+    }
+
+    if (!v.room) {
+      this.error = 'Please select a room.';
+      this.loading = false;
+      return;
+    }
+
     const payload = {
-      ...this.form.value,
+      guest: v.guest,
+      room: v.room,
+      checkIn: checkInAt,
+      checkOut: checkOutAt,
+      numberOfGuests: v.numberOfGuests,
+      specialRequests: v.specialRequests,
+      paymentStatus: v.paymentStatus,
+      status: v.status,
+      discountPercent: v.discountPercent || 0,
+      promoCode: v.promoCode || '',
       totalAmount: this.estimatedTotal || undefined,
     };
 
@@ -356,8 +509,22 @@ export class BookingFormComponent implements OnInit {
     }
   }
 
+  private combineDateAndTime(dateStr: string, timeStr: string): string {
+    const time = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+    return `${dateStr}T${time}`;
+  }
+
   private toDateInput(date: Date): string {
-    return date.toISOString().slice(0, 10);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  private toTimeInput(date: Date): string {
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
   }
 
   private addDays(date: Date, days: number): Date {

@@ -7,8 +7,13 @@ import { GuestFormComponent } from './features/guests/guest-form/guest-form.comp
 import { GuestProfileComponent } from './features/guests/guest-profile/guest-profile.component';
 import { BookingsComponent } from './features/bookings/bookings.component';
 import { BookingFormComponent } from './features/bookings/booking-form/booking-form.component';
+import { BookingCalendarComponent } from './features/bookings/booking-calendar/booking-calendar.component';
+import { BookingWaitlistComponent } from './features/bookings/booking-waitlist/booking-waitlist.component';
+import { CheckInDeskComponent } from './features/check-in/check-in-desk.component';
+import { ReportsComponent } from './features/reports/reports.component';
 import { ModulePageComponent } from './features/module-page/module-page.component';
 import { RestaurantComponent } from './features/restaurant/restaurant.component';
+import { KitchenDisplayComponent } from './features/restaurant/kitchen-display.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { UnauthorizedComponent } from './features/auth/unauthorized/unauthorized.component';
@@ -91,6 +96,16 @@ export const routes: Routes = [
         component: BookingsComponent,
       },
       {
+        path: 'bookings/calendar',
+        canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
+        component: BookingCalendarComponent,
+      },
+      {
+        path: 'bookings/waitlist',
+        canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
+        component: BookingWaitlistComponent,
+      },
+      {
         path: 'bookings/new',
         canActivate: [roleGuard('Admin', 'Receptionist')],
         component: BookingFormComponent,
@@ -105,13 +120,7 @@ export const routes: Routes = [
       {
         path: 'check-in',
         canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
-        component: ModulePageComponent,
-        data: {
-          title: 'Check-in / Check-out Management',
-          description: 'Manage guest arrivals, departures, and room assignments',
-          icon: '🔑',
-          moduleKey: 'check-in',
-        },
+        component: CheckInDeskComponent,
       },
 
       // 6. Billing & Payment Management
@@ -132,6 +141,11 @@ export const routes: Routes = [
         path: 'restaurant',
         canActivate: [roleGuard('Admin', 'Manager', 'Restaurant Staff')],
         component: RestaurantComponent,
+      },
+      {
+        path: 'restaurant/kitchen',
+        canActivate: [roleGuard('Admin', 'Manager', 'Restaurant Staff')],
+        component: KitchenDisplayComponent,
       },
 
       // 8. Housekeeping Management
@@ -158,13 +172,7 @@ export const routes: Routes = [
       {
         path: 'reports',
         canActivate: [roleGuard('Admin', 'Manager')],
-        component: ModulePageComponent,
-        data: {
-          title: 'Reporting & Analytics',
-          description: 'View occupancy, revenue, and performance reports',
-          icon: '📈',
-          moduleKey: 'reports',
-        },
+        component: ReportsComponent,
       },
 
       // ── User Management: Admin only ────────────────────────────────────────

@@ -31,3 +31,6 @@ Thumbs.db
 # Production build outputs (if any)
 dist/
 build/
+
+# Uploaded guest ID documents
+uploads/
