@@ -82,7 +82,7 @@ exports.checkAvailability = async (req, res) => {
       status: { $in: ACTIVE_STATUSES },
       checkIn: { $lt: new Date(checkOut) },
       checkOut: { $gt: new Date(checkIn) },
-    }).select('room');
+    }).select('room status');
 
     const bookedRoomIds = new Set(conflicting.map((b) => b.room.toString()));
     const available = rooms.filter((room) => !bookedRoomIds.has(room._id.toString()));
@@ -94,6 +94,7 @@ exports.checkAvailability = async (req, res) => {
       nights: nightsBetween(checkIn, checkOut),
       count: available.length,
       data: available,
+      conflictingBookings: conflicting,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -219,6 +220,9 @@ exports.createBooking = async (req, res) => {
     if (booking.status === 'Confirmed') {
       roomDoc.status = 'Reserved';
       await roomDoc.save();
+    } else if (booking.status === 'Checked-In') {
+      roomDoc.status = 'Occupied';
+      await roomDoc.save();
     }
 
     const populated = await populateBooking(Booking.findById(booking._id));
@@ -281,6 +285,15 @@ exports.updateBooking = async (req, res) => {
       });
     }
 
+    // If room is changed, release the old room
+    if (room.toString() !== existing.room.toString()) {
+      const oldRoom = await Room.findById(existing.room);
+      if (oldRoom && ['Reserved', 'Occupied'].includes(oldRoom.status)) {
+        oldRoom.status = 'Available';
+        await oldRoom.save();
+      }
+    }
+
     const nights = nightsBetween(checkIn, checkOut);
     const totalAmount =
       req.body.totalAmount != null ? Number(req.body.totalAmount) : nights * roomDoc.price;
@@ -304,6 +317,19 @@ exports.updateBooking = async (req, res) => {
         runValidators: true,
       })
     );
+
+    // Update Room status dynamically in DB
+    const targetStatus = req.body.status || existing.status;
+    const finalRoomId = room || existing.room;
+    if (targetStatus === 'Confirmed') {
+      await Room.findByIdAndUpdate(finalRoomId, { status: 'Reserved' });
+    } else if (targetStatus === 'Checked-In') {
+      await Room.findByIdAndUpdate(finalRoomId, { status: 'Occupied' });
+    } else if (targetStatus === 'Checked-Out') {
+      await Room.findByIdAndUpdate(finalRoomId, { status: 'Cleaning' });
+    } else if (targetStatus === 'Cancelled') {
+      await Room.findByIdAndUpdate(finalRoomId, { status: 'Available' });
+    }
 
     res.json({ success: true, data: booking });
   } catch (error) {
@@ -376,9 +402,9 @@ exports.cancelBooking = async (req, res) => {
     booking.status = 'Cancelled';
     await booking.save();
 
-    // Free room if it was reserved for this booking and not currently occupied
+    // Free room if it was reserved or occupied for this booking
     const room = await Room.findById(booking.room);
-    if (room && room.status === 'Reserved') {
+    if (room && ['Reserved', 'Occupied'].includes(room.status)) {
       room.status = 'Available';
       await room.save();
     }

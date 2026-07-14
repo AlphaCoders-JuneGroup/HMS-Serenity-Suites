@@ -1,0 +1,219 @@
+<div class="page-shell">
+  <!-- Notifications -->
+  @if (success) {
+    <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center justify-between shadow-sm animate-fade-in">
+      <div class="flex items-center gap-3">
+        <span class="text-lg">✅</span>
+        <p class="font-medium">{{ success }}</p>
+      </div>
+      <button (click)="clearAlerts()" class="text-green-500 hover:text-green-700 text-lg font-bold">×</button>
+    </div>
+  }
+  @if (error) {
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center justify-between shadow-sm animate-fade-in">
+      <div class="flex items-center gap-3">
+        <span class="text-lg">⚠️</span>
+        <p class="font-medium">{{ error }}</p>
+      </div>
+      <button (click)="clearAlerts()" class="text-red-500 hover:text-red-700 text-lg font-bold">×</button>
+    </div>
+  }
+
+  <!-- Header -->
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Housekeeping Management</h2>
+    <p class="text-gray-500 mt-1">Track room cleanliness, manage cleaning queues, and report out-of-service maintenance rooms</p>
+  </div>
+
+  <!-- Metrics cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div class="card flex items-center gap-3">
+      <div class="stat-icon bg-amber-50 text-amber-600">🧹</div>
+      <div>
+        <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Dirty (Needs Cleaning)</p>
+        <p class="text-2xl font-bold text-amber-600">{{ dirtyCount }}</p>
+      </div>
+    </div>
+    <div class="card flex items-center gap-3">
+      <div class="stat-icon bg-green-50 text-green-600">✨</div>
+      <div>
+        <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Clean & Ready</p>
+        <p class="text-2xl font-bold text-green-600">{{ cleanCount }}</p>
+      </div>
+    </div>
+    <div class="card flex items-center gap-3">
+      <div class="stat-icon bg-blue-50 text-blue-600">🏨</div>
+      <div>
+        <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Occupied (In-House)</p>
+        <p class="text-2xl font-bold text-blue-600">{{ occupiedCount }}</p>
+      </div>
+    </div>
+    <div class="card flex items-center gap-3">
+      <div class="stat-icon bg-red-50 text-red-600">🛠️</div>
+      <div>
+        <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Out of Service</p>
+        <p class="text-2xl font-bold text-red-600">{{ maintenanceCount }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters panel -->
+  <div class="card mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-white border border-gray-100 shadow-sm">
+    <!-- Search box -->
+    <div class="w-full md:max-w-xs relative">
+      <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        placeholder="Search room or type..."
+        class="w-full rounded-lg border border-gray-200 pl-9 pr-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+      />
+    </div>
+
+    <!-- Status Category chips -->
+    <div class="flex flex-wrap gap-2">
+      <button
+        type="button"
+        (click)="filterStatus = 'Cleaning'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border"
+        [class]="filterStatus === 'Cleaning' ? 'bg-amber-600 text-white shadow-sm border-amber-600' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100'"
+      >
+        Needs Cleaning ({{ dirtyCount }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = 'Available'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border"
+        [class]="filterStatus === 'Available' ? 'bg-green-600 text-white shadow-sm border-green-600' : 'bg-green-50 text-green-700 hover:bg-green-100 border-green-100'"
+      >
+        Clean & Ready ({{ cleanCount }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = 'Occupied'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border"
+        [class]="filterStatus === 'Occupied' ? 'bg-blue-600 text-white shadow-sm border-blue-600' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100'"
+      >
+        Occupied ({{ occupiedCount }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = 'Maintenance'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border"
+        [class]="filterStatus === 'Maintenance' ? 'bg-red-600 text-white shadow-sm border-red-600' : 'bg-red-50 text-red-700 hover:bg-red-100 border-red-100'"
+      >
+        Maintenance ({{ maintenanceCount }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = ''"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border"
+        [class]="filterStatus === '' ? 'bg-serenity-600 text-white shadow-sm border-serenity-600' : 'bg-gray-50 text-gray-600 hover:bg-gray-105 border-gray-200'"
+      >
+        All ({{ rooms.length }})
+      </button>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="empty-state text-gray-400">
+      <p class="text-4xl mb-3 animate-spin">⏳</p>
+      <p class="font-medium text-gray-600">Updating queue...</p>
+    </div>
+  } @else if (filteredRooms.length === 0) {
+    <div class="empty-state">
+      <p class="text-5xl mb-4">🧹</p>
+      <p class="text-gray-600 text-lg font-semibold">Queue is empty</p>
+      <p class="text-gray-400 text-sm mt-2 max-w-sm mx-auto">
+        There are no rooms matching the selected category.
+      </p>
+    </div>
+  } @else {
+    <!-- Housekeeping Rooms Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      @for (room of filteredRooms; track room._id || room.roomNumber) {
+        <div class="card hover:shadow-md hover:border-gray-200 transition-all duration-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-start justify-between gap-3 mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-serenity-50 text-serenity-700 flex items-center justify-center font-bold text-base shadow-sm">
+                  {{ room.roomNumber }}
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 text-base">Room {{ room.roomNumber }}</h3>
+                  <p class="text-xs text-gray-500">{{ room.type }} · Floor {{ room.floor }}</p>
+                </div>
+              </div>
+              <span [class]="statusClass(room.status)">{{ room.status }}</span>
+            </div>
+
+            <!-- Specs & Amenities list -->
+            <div class="grid grid-cols-2 gap-3 text-xs mb-4">
+              <div class="rounded-lg bg-gray-50 px-3 py-1.5 border border-gray-100">
+                <span class="text-gray-400 font-medium">Capacity:</span>
+                <span class="font-bold text-gray-800 ml-1.5">{{ room.capacity }} guests</span>
+              </div>
+              <div class="rounded-lg bg-gray-50 px-3 py-1.5 border border-gray-100">
+                <span class="text-gray-400 font-medium">Floor Level:</span>
+                <span class="font-bold text-gray-800 ml-1.5">Floor {{ room.floor }}</span>
+              </div>
+            </div>
+
+            @if (room.amenities?.length) {
+              <div class="flex flex-wrap gap-1 mb-4">
+                @for (amenity of room.amenities; track amenity) {
+                  <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{{ amenity }}</span>
+                }
+              </div>
+            }
+
+            @if (room.description) {
+              <p class="text-xs text-gray-500 line-clamp-2 italic mb-4">"{{ room.description }}"</p>
+            }
+          </div>
+
+          <!-- Housekeeping Action Panel -->
+          <div class="border-t border-gray-100 pt-3 mt-4 flex items-center justify-end gap-2">
+            <!-- If Room is Dirty (Needs Cleaning) -->
+            @if (room.status === 'Cleaning') {
+              <button
+                (click)="updateRoomStatus(room, 'Available')"
+                class="text-xs font-semibold bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
+              >
+                ✨ Mark Clean & Ready
+              </button>
+            }
+
+            <!-- If Room is Clean (Available) -->
+            @if (room.status === 'Available') {
+              <button
+                (click)="updateRoomStatus(room, 'Cleaning')"
+                class="text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
+              >
+                🧹 Mark Needs Cleaning
+              </button>
+            }
+
+            <!-- If Room is Maintenance -->
+            @if (room.status === 'Maintenance') {
+              <button
+                (click)="updateRoomStatus(room, 'Available')"
+                class="text-xs font-semibold bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
+              >
+                🛠️ Resolve Maintenance
+              </button>
+            } @else {
+              <!-- Report Maintenance option -->
+              <button
+                (click)="updateRoomStatus(room, 'Maintenance')"
+                class="text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3.5 py-2 rounded-lg transition-colors cursor-pointer"
+              >
+                🛠️ Report Maintenance
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

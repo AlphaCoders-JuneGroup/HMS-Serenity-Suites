@@ -1,137 +1,674 @@
 <div class="page-shell">
+  <!-- Notifications -->
+  @if (success) {
+    <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center justify-between shadow-sm animate-fade-in">
+      <div class="flex items-center gap-3">
+        <span class="text-lg">✅</span>
+        <p class="font-medium">{{ success }}</p>
+      </div>
+      <button (click)="clearAlerts()" class="text-green-500 hover:text-green-700 text-lg font-bold">×</button>
+    </div>
+  }
+  @if (error) {
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center justify-between shadow-sm animate-fade-in">
+      <div class="flex items-center gap-3">
+        <span class="text-lg">⚠️</span>
+        <p class="font-medium">{{ error }}</p>
+      </div>
+      <button (click)="clearAlerts()" class="text-red-500 hover:text-red-700 text-lg font-bold">×</button>
+    </div>
+  }
+
+  <!-- Header -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
       <h2 class="text-2xl font-bold text-gray-900">Room Management</h2>
-      <p class="text-gray-500 mt-1">Manage hotel rooms, types, and availability</p>
+      <p class="text-gray-500 mt-1">Configure hotel rooms, classifications, and track current room occupancy status</p>
     </div>
-    <button class="btn-primary self-start">+ Add Room</button>
+    @if (canManageRooms) {
+      <div>
+        @if (activeTab === 'rooms') {
+          <button (click)="openAddRoomModal()" class="btn-primary self-start flex items-center gap-2">
+            <span>+</span> Add Room
+          </button>
+        } @else {
+          <button (click)="openAddTypeModal()" class="btn-primary self-start flex items-center gap-2">
+            <span>+</span> Add Room Type
+          </button>
+        }
+      </div>
+    }
   </div>
 
-  <!-- Related summary cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-    <div class="card">
-      <div class="flex items-center gap-3">
-        <div class="stat-icon bg-serenity-50">🛏️</div>
+  <!-- Tab Switcher -->
+  <div class="flex border-b border-gray-200 mb-6 gap-6">
+    <button
+      (click)="activeTab = 'rooms'"
+      class="pb-3 text-sm font-semibold transition-all border-b-2 px-1 cursor-pointer"
+      [class]="activeTab === 'rooms' ? 'border-serenity-600 text-serenity-700' : 'border-transparent text-gray-500 hover:text-gray-700'"
+    >
+      🛏️ Rooms List
+    </button>
+    <button
+      (click)="activeTab = 'types'"
+      class="pb-3 text-sm font-semibold transition-all border-b-2 px-1 cursor-pointer"
+      [class]="activeTab === 'types' ? 'border-serenity-600 text-serenity-700' : 'border-transparent text-gray-500 hover:text-gray-700'"
+    >
+      🏷️ Room Types
+    </button>
+  </div>
+
+  <!-- Tab 1: Rooms List -->
+  @if (activeTab === 'rooms') {
+    <!-- Related summary cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+      <div class="card flex items-center gap-3">
+        <div class="stat-icon bg-serenity-50 text-serenity-600">🏢</div>
         <div>
-          <p class="text-sm text-gray-500">Total Rooms</p>
-          <p class="text-2xl font-bold text-serenity-700">{{ rooms.length }}</p>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Total Rooms</p>
+          <p class="text-2xl font-bold text-gray-900">{{ rooms.length }}</p>
         </div>
       </div>
-    </div>
-    <div class="card">
-      <div class="flex items-center gap-3">
-        <div class="stat-icon bg-green-50">✅</div>
+      <div class="card flex items-center gap-3">
+        <div class="stat-icon bg-green-50 text-green-600">✅</div>
         <div>
-          <p class="text-sm text-gray-500">Available</p>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Available</p>
           <p class="text-2xl font-bold text-green-600">{{ availableCount }}</p>
         </div>
       </div>
-    </div>
-    <div class="card">
-      <div class="flex items-center gap-3">
-        <div class="stat-icon bg-violet-50">👤</div>
+      <div class="card flex items-center gap-3">
+        <div class="stat-icon bg-blue-50 text-blue-600">👤</div>
         <div>
-          <p class="text-sm text-gray-500">Occupied</p>
-          <p class="text-2xl font-bold text-violet-600">{{ occupiedCount }}</p>
-          <p class="text-xs text-gray-400">{{ occupancyRate }}% occupancy</p>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Occupied</p>
+          <p class="text-2xl font-bold text-blue-600">{{ occupiedCount }}</p>
+          <p class="text-xs text-gray-400 font-medium">{{ occupancyRate }}% occupancy</p>
+        </div>
+      </div>
+      <div class="card flex items-center gap-3">
+        <div class="stat-icon bg-amber-50 text-amber-600">📅</div>
+        <div>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Booked / Reserved</p>
+          <p class="text-2xl font-bold text-amber-600">{{ bookedCount }}</p>
+        </div>
+      </div>
+      <div class="card flex items-center gap-3">
+        <div class="stat-icon bg-purple-50 text-purple-600">🧹</div>
+        <div>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Cleaning / Maintenance</p>
+          <p class="text-2xl font-bold text-purple-600">{{ cleaningCount + maintenanceCount }}</p>
         </div>
       </div>
     </div>
-    <div class="card">
-      <div class="flex items-center gap-3">
-        <div class="stat-icon bg-amber-50">🛠️</div>
+
+    <!-- Advanced Filters Panel -->
+    <div class="card mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 p-5 shadow-sm border border-gray-100 bg-white">
+      <!-- Search input -->
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Search Rooms</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            placeholder="Search number, floor, amenity..."
+            class="w-full rounded-lg border border-gray-200 pl-9 pr-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+          />
+        </div>
+      </div>
+
+      <!-- Classification filter -->
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Room Classification</label>
+        <select
+          [(ngModel)]="filterType"
+          class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500 bg-white cursor-pointer"
+        >
+          <option value="">All Classifications</option>
+          @for (type of roomTypes; track type.name) {
+            <option [value]="type.name">{{ type.name }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Date filters -->
+      <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <p class="text-sm text-gray-500">Maintenance / Reserved</p>
-          <p class="text-2xl font-bold text-amber-600">{{ maintenanceCount + reservedCount }}</p>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Check-In Availability</label>
+          <input
+            type="date"
+            [(ngModel)]="filterCheckIn"
+            (change)="onDateFilterChange()"
+            class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Check-Out Availability</label>
+          <div class="flex items-center gap-2">
+            <input
+              type="date"
+              [(ngModel)]="filterCheckOut"
+              (change)="onDateFilterChange()"
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+            />
+            @if (filterCheckIn || filterCheckOut || searchTerm || filterType || filterStatus) {
+              <button
+                type="button"
+                (click)="clearAllFilters()"
+                title="Clear all filters"
+                class="bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg p-2 transition-colors cursor-pointer text-sm font-semibold flex items-center justify-center flex-shrink-0 w-9 h-9"
+              >
+                🧹
+              </button>
+            }
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Summary chips -->
-  <div class="flex flex-wrap gap-3 mb-6">
-    <button
-      type="button"
-      (click)="filterStatus = ''"
-      class="badge transition-colors cursor-pointer"
-      [class]="filterStatus === '' ? 'bg-serenity-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-serenity-300'"
-    >
-      All {{ rooms.length }}
-    </button>
-    <button
-      type="button"
-      (click)="filterStatus = 'Available'"
-      class="badge transition-colors cursor-pointer"
-      [class]="filterStatus === 'Available' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100'"
-    >
-      Available {{ availableCount }}
-    </button>
-    <button
-      type="button"
-      (click)="filterStatus = 'Occupied'"
-      class="badge transition-colors cursor-pointer"
-      [class]="filterStatus === 'Occupied' ? 'bg-serenity-600 text-white' : 'bg-serenity-50 text-serenity-700 hover:bg-serenity-100'"
-    >
-      Occupied {{ occupiedCount }}
-    </button>
-  </div>
+    <!-- Date Checker Notification -->
+    @if (loadingAvailability) {
+      <div class="mb-6 p-3 bg-serenity-50 border border-serenity-100 text-serenity-700 text-xs font-medium rounded-xl flex items-center gap-2 shadow-sm animate-pulse">
+        <span class="animate-spin text-sm">⏳</span> Checking date availability against database bookings...
+      </div>
+    }
 
-  @if (loading) {
-    <div class="empty-state text-gray-400">
-      <p class="text-4xl mb-3">⏳</p>
-      <p>Loading rooms...</p>
+    <!-- Status filter chips -->
+    <div class="flex flex-wrap gap-2.5 mb-6 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+      <button
+        type="button"
+        (click)="filterStatus = ''"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+        [class]="filterStatus === '' ? 'bg-serenity-600 text-white shadow-sm' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'"
+      >
+        All ({{ rooms.length }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = 'Available'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+        [class]="filterStatus === 'Available' ? 'bg-green-600 text-white shadow-sm' : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-100'"
+      >
+        Available ({{ availableCount }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = 'Booked'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+        [class]="filterStatus === 'Booked' ? 'bg-amber-600 text-white shadow-sm' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-100'"
+      >
+        Booked / Reserved ({{ bookedCount }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = 'Occupied'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+        [class]="filterStatus === 'Occupied' ? 'bg-blue-600 text-white shadow-sm' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100'"
+      >
+        Occupied ({{ occupiedCount }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = 'Cleaning'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+        [class]="filterStatus === 'Cleaning' ? 'bg-purple-600 text-white shadow-sm' : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-100'"
+      >
+        Cleaning ({{ cleaningCount }})
+      </button>
+      <button
+        type="button"
+        (click)="filterStatus = 'Maintenance'"
+        class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+        [class]="filterStatus === 'Maintenance' ? 'bg-red-600 text-white shadow-sm' : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-100'"
+      >
+        Maintenance ({{ maintenanceCount }})
+      </button>
     </div>
-  } @else if (error) {
-    <div class="card flex items-center gap-3 bg-red-50 border-red-200 text-red-700">
-      <span>⚠️</span> {{ error }}
-    </div>
-  } @else if (filteredRooms.length === 0) {
-    <div class="empty-state">
-      <p class="text-4xl mb-3">🛏️</p>
-      <p class="text-gray-500 text-lg font-medium">No rooms found</p>
-      <p class="text-gray-400 text-sm mt-2">
-        {{ filterStatus ? 'Try a different status filter' : 'Add your first room to get started' }}
-      </p>
-    </div>
-  } @else {
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-      @for (room of filteredRooms; track room._id || room.roomNumber) {
-        <div class="card hover:shadow-md transition-shadow flex flex-col">
-          <div class="flex items-start justify-between gap-3 mb-4">
-            <div class="flex items-center gap-3">
-              <div class="stat-icon bg-serenity-50 text-serenity-700 text-lg font-bold">
-                {{ room.roomNumber }}
+
+    @if (loading) {
+      <div class="empty-state text-gray-400">
+        <p class="text-4xl mb-3 animate-spin">⏳</p>
+        <p class="font-medium text-gray-600">Loading hotel rooms...</p>
+      </div>
+    } @else if (filteredRooms.length === 0) {
+      <div class="empty-state">
+        <p class="text-5xl mb-4">🛏️</p>
+        <p class="text-gray-600 text-lg font-semibold">No rooms found</p>
+        <p class="text-gray-400 text-sm mt-2 max-w-sm mx-auto">
+          {{ filterStatus ? 'No rooms match this status filter. Try checking another category.' : 'Start configuring rooms for your Serenity Suites hotel.' }}
+        </p>
+        @if (!filterStatus && canManageRooms) {
+          <button (click)="openAddRoomModal()" class="btn-primary mt-5">Create First Room</button>
+        }
+      </div>
+    } @else {
+      <!-- Rooms Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        @for (room of filteredRooms; track room._id || room.roomNumber) {
+          <div class="card hover:shadow-md hover:border-gray-200 transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-serenity-50 text-serenity-700 flex items-center justify-center font-bold text-base shadow-sm">
+                    {{ room.roomNumber }}
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-gray-900 text-base">Room {{ room.roomNumber }}</h3>
+                    <p class="text-xs text-gray-500">{{ room.type }} · Floor {{ room.floor }}</p>
+                  </div>
+                </div>
+                <span [class]="statusClass(getDisplayStatus(room))">{{ getDisplayStatus(room) }}</span>
               </div>
-              <div>
-                <h3 class="font-semibold text-gray-900">Room {{ room.roomNumber }}</h3>
-                <p class="text-sm text-gray-500">{{ room.type }} · Floor {{ room.floor }}</p>
+
+              <!-- Quick Status Selector -->
+              @if (canUpdateStatus) {
+                <div class="mb-4 bg-gray-50 p-2.5 rounded-lg border border-gray-150 flex items-center justify-between gap-2">
+                  <span class="text-xs text-gray-500 font-medium">Quick Status:</span>
+                  <select
+                    [ngModel]="room.status"
+                    (change)="setRoomStatus(room, $any($event.target).value)"
+                    class="text-xs bg-white border border-gray-200 rounded px-2.5 py-1 focus:ring-1 focus:ring-serenity-500 focus:outline-none cursor-pointer font-semibold text-gray-700 shadow-sm"
+                  >
+                    @for (opt of statusOptions; track opt) {
+                      <option [value]="opt">{{ opt }}</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              <!-- Specs -->
+              <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+                <div class="rounded-xl bg-gray-50/70 border border-gray-100 px-3.5 py-2">
+                  <p class="text-xs text-gray-400 font-medium">Price / night</p>
+                  <p class="font-bold text-serenity-700 text-sm mt-0.5">{{ room.price | currency: 'LKR':'symbol':'1.0-0' }}</p>
+                </div>
+                <div class="rounded-xl bg-gray-50/70 border border-gray-100 px-3.5 py-2">
+                  <p class="text-xs text-gray-400 font-medium">Max Capacity</p>
+                  <p class="font-bold text-gray-800 text-sm mt-0.5">{{ room.capacity }} guests</p>
+                </div>
               </div>
-            </div>
-            <span [class]="statusClass(room.status)">{{ room.status }}</span>
-          </div>
 
-          <div class="grid grid-cols-2 gap-3 text-sm mb-4">
-            <div class="rounded-lg bg-gray-50 px-3 py-2">
-              <p class="text-xs text-gray-400">Price / night</p>
-              <p class="font-semibold text-gray-800">{{ room.price | currency: 'LKR':'symbol':'1.0-0' }}</p>
-            </div>
-            <div class="rounded-lg bg-gray-50 px-3 py-2">
-              <p class="text-xs text-gray-400">Capacity</p>
-              <p class="font-semibold text-gray-800">{{ room.capacity }} guests</p>
-            </div>
-          </div>
-
-          @if (room.amenities?.length) {
-            <div class="flex flex-wrap gap-1.5 mt-auto">
-              @for (amenity of room.amenities; track amenity) {
-                <span class="badge-neutral">{{ amenity }}</span>
+              <!-- Amenities / Description -->
+              @if (room.amenities?.length) {
+                <div class="flex flex-wrap gap-1.5 mb-4">
+                  @for (amenity of room.amenities; track amenity) {
+                    <span class="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">{{ amenity }}</span>
+                  }
+                </div>
+              }
+              @if (room.description) {
+                <p class="text-xs text-gray-500 line-clamp-2 italic mb-4">"{{ room.description }}"</p>
               }
             </div>
-          } @else if (room.description) {
-            <p class="text-sm text-gray-500 line-clamp-2 mt-auto">{{ room.description }}</p>
-          }
+
+            <!-- Manage Actions -->
+            @if (canManageRooms) {
+              <div class="border-t border-gray-100 pt-3 mt-auto flex items-center justify-end gap-2.5">
+                <button
+                  (click)="openEditRoomModal(room)"
+                  class="text-xs font-semibold text-serenity-600 hover:text-serenity-700 bg-serenity-50 hover:bg-serenity-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  Edit Room
+                </button>
+                <button
+                  (click)="confirmDeleteRoom(room)"
+                  class="text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  Delete
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- Tab 2: Room Types -->
+  @if (activeTab === 'types') {
+    @if (loading) {
+      <div class="empty-state text-gray-400">
+        <p class="text-4xl mb-3 animate-spin">⏳</p>
+        <p class="font-medium text-gray-600">Loading classifications...</p>
+      </div>
+    } @else if (roomTypes.length === 0) {
+      <div class="empty-state">
+        <p class="text-5xl mb-4">🏷️</p>
+        <p class="text-gray-600 text-lg font-semibold">No room classifications defined</p>
+        <p class="text-gray-400 text-sm mt-2 max-w-sm mx-auto">
+          Configure room classes (e.g. Standard, Deluxe, Suite) which set standard pricing, capacities, and base amenities.
+        </p>
+        @if (canManageRooms) {
+          <button (click)="openAddTypeModal()" class="btn-primary mt-5">Create First Room Type</button>
+        }
+      </div>
+    } @else {
+      <!-- Room Types Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        @for (type of roomTypes; track type._id || type.name) {
+          <div class="card hover:shadow-md hover:border-gray-200 transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <h3 class="font-bold text-gray-950 text-base">{{ type.name }} Classification</h3>
+                  <p class="text-xs text-gray-400 mt-0.5">Base configurations</p>
+                </div>
+                <span class="text-xs font-bold text-serenity-600 bg-serenity-50 px-2.5 py-1 rounded-lg">Base Config</span>
+              </div>
+
+              @if (type.description) {
+                <p class="text-xs text-gray-500 mb-4 line-clamp-3 leading-relaxed">{{ type.description }}</p>
+              }
+
+              <!-- Specs -->
+              <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+                <div class="rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2">
+                  <p class="text-xs text-gray-400 font-medium">Standard Price</p>
+                  <p class="font-bold text-gray-800 text-sm mt-0.5">{{ type.basePrice | currency: 'LKR':'symbol':'1.0-0' }}</p>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-100 px-3.5 py-2">
+                  <p class="text-xs text-gray-400 font-medium">Standard Capacity</p>
+                  <p class="font-bold text-gray-800 text-sm mt-0.5">{{ type.capacity }} guests</p>
+                </div>
+              </div>
+
+              <!-- Base Amenities -->
+              @if (type.amenities?.length) {
+                <div class="mb-4">
+                  <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1.5">Standard Amenities</p>
+                  <div class="flex flex-wrap gap-1">
+                    @for (amenity of type.amenities; track amenity) {
+                      <span class="text-[10px] font-semibold bg-gray-150 text-gray-600 px-2 py-0.5 rounded-md">{{ amenity }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Manage Actions -->
+            @if (canManageRooms) {
+              <div class="border-t border-gray-100 pt-3 mt-auto flex items-center justify-end gap-2.5">
+                <button
+                  (click)="openEditTypeModal(type)"
+                  class="text-xs font-semibold text-serenity-600 hover:text-serenity-700 bg-serenity-50 hover:bg-serenity-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  Edit Type
+                </button>
+                <button
+                  (click)="confirmDeleteType(type)"
+                  class="text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  Delete
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- MODAL: Create / Edit Room -->
+  @if (showRoomModal) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto flex flex-col">
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="font-bold text-gray-900 text-lg">{{ editingRoom ? 'Edit Room ' + editingRoom.roomNumber : 'Add New Room' }}</h3>
+          <button (click)="showRoomModal = false" class="text-gray-400 hover:text-gray-600 font-bold text-xl cursor-pointer">×</button>
         </div>
-      }
+
+        <form [formGroup]="roomForm" (ngSubmit)="saveRoom()" class="p-6 space-y-4">
+          <!-- Room Number -->
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Room Number</label>
+            <input
+              type="text"
+              formControlName="roomNumber"
+              placeholder="e.g. 104, 305B"
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+            />
+            @if (roomForm.get('roomNumber')?.invalid && roomForm.get('roomNumber')?.touched) {
+              <span class="text-red-500 text-xs mt-1 block">Valid room number is required (numbers, letters, hyphens).</span>
+            }
+          </div>
+
+          <!-- Room Type -->
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Room Classification</label>
+            <select
+              formControlName="type"
+              (change)="onRoomTypeChange($event)"
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500 bg-white"
+            >
+              <option value="" disabled>-- Select Classification --</option>
+              @for (type of roomTypes; track type.name) {
+                <option [value]="type.name">{{ type.name }}</option>
+              }
+            </select>
+            @if (roomForm.get('type')?.invalid && roomForm.get('type')?.touched) {
+              <span class="text-red-500 text-xs mt-1 block">Please select a room classification.</span>
+            }
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Price -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Price / Night (LKR)</label>
+              <input
+                type="number"
+                formControlName="price"
+                min="0"
+                class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+              />
+              @if (roomForm.get('price')?.invalid && roomForm.get('price')?.touched) {
+                <span class="text-red-500 text-xs mt-1 block">Valid price is required.</span>
+              }
+            </div>
+
+            <!-- Capacity -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Max Capacity</label>
+              <input
+                type="number"
+                formControlName="capacity"
+                min="1"
+                class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+              />
+              @if (roomForm.get('capacity')?.invalid && roomForm.get('capacity')?.touched) {
+                <span class="text-red-500 text-xs mt-1 block">Capacity must be >= 1.</span>
+              }
+            </div>
+
+            <!-- Floor -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Floor Level</label>
+              <input
+                type="number"
+                formControlName="floor"
+                min="0"
+                class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+              />
+              @if (roomForm.get('floor')?.invalid && roomForm.get('floor')?.touched) {
+                <span class="text-red-500 text-xs mt-1 block">Valid floor is required.</span>
+              }
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Status</label>
+            <select
+              formControlName="status"
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500 bg-white"
+            >
+              @for (opt of statusOptions; track opt) {
+                <option [value]="opt">{{ opt }}</option>
+              }
+            </select>
+            @if (roomForm.get('status')?.invalid && roomForm.get('status')?.touched) {
+              <span class="text-red-500 text-xs mt-1 block">Room status is required.</span>
+            }
+          </div>
+
+          <!-- Amenities -->
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Amenities (comma-separated)</label>
+            <input
+              type="text"
+              formControlName="amenities"
+              placeholder="WiFi, Mini Bar, Balcony, TV, AC"
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+            />
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Description</label>
+            <textarea
+              formControlName="description"
+              rows="3"
+              placeholder="e.g. Spacious corner deluxe room featuring views of Colombo skyline."
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+            ></textarea>
+          </div>
+
+          <!-- Form Buttons -->
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+            <button type="button" (click)="showRoomModal = false" class="btn-secondary text-sm">Cancel</button>
+            <button type="submit" [disabled]="roomForm.invalid" class="btn-primary text-sm">
+              {{ editingRoom ? 'Update Room' : 'Create Room' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: Create / Edit Room Type -->
+  @if (showTypeModal) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto flex flex-col">
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="font-bold text-gray-900 text-lg">{{ editingType ? 'Edit Room Type: ' + editingType.name : 'Add New Room Type' }}</h3>
+          <button (click)="showTypeModal = false" class="text-gray-400 hover:text-gray-600 font-bold text-xl cursor-pointer">×</button>
+        </div>
+
+        <form [formGroup]="typeForm" (ngSubmit)="saveRoomType()" class="p-6 space-y-4">
+          <!-- Classification Name -->
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Classification Name</label>
+            <input
+              type="text"
+              formControlName="name"
+              placeholder="e.g. Penthouse, Single Room"
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+            />
+            @if (typeForm.get('name')?.invalid && typeForm.get('name')?.touched) {
+              <span class="text-red-500 text-xs mt-1 block">Classification name is required.</span>
+            }
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Price -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Default Price / Night (LKR)</label>
+              <input
+                type="number"
+                formControlName="basePrice"
+                min="0"
+                class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+              />
+              @if (typeForm.get('basePrice')?.invalid && typeForm.get('basePrice')?.touched) {
+                <span class="text-red-500 text-xs mt-1 block">Valid standard price is required.</span>
+              }
+            </div>
+
+            <!-- Capacity -->
+            <div>
+              <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Default Guest Capacity</label>
+              <input
+                type="number"
+                formControlName="capacity"
+                min="1"
+                class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+              />
+              @if (typeForm.get('capacity')?.invalid && typeForm.get('capacity')?.touched) {
+                <span class="text-red-500 text-xs mt-1 block">Capacity must be >= 1.</span>
+              }
+            </div>
+          </div>
+
+          <!-- Amenities -->
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Default Amenities (comma-separated)</label>
+            <input
+              type="text"
+              formControlName="amenities"
+              placeholder="WiFi, TV, AC, Safe"
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+            />
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Description</label>
+            <textarea
+              formControlName="description"
+              rows="3"
+              placeholder="e.g. Spacious configurations tailored for premium family stays."
+              class="w-full rounded-lg border border-gray-200 px-3.5 py-2 text-sm focus:border-serenity-500 focus:outline-none focus:ring-1 focus:ring-serenity-500"
+            ></textarea>
+          </div>
+
+          <!-- Form Buttons -->
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+            <button type="button" (click)="showTypeModal = false" class="btn-secondary text-sm">Cancel</button>
+            <button type="submit" [disabled]="typeForm.invalid" class="btn-primary text-sm">
+              {{ editingType ? 'Update Classification' : 'Create Classification' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: Delete Room Confirmation -->
+  @if (showDeleteRoomModal && deletingRoom) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 text-center">
+        <p class="text-4xl mb-3">🚨</p>
+        <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Room {{ deletingRoom.roomNumber }}?</h3>
+        <p class="text-sm text-gray-500 mb-6">
+          Are you sure you want to delete Room <strong>{{ deletingRoom.roomNumber }}</strong>? This action is permanent and cannot be undone.
+        </p>
+        <div class="flex items-center justify-center gap-3">
+          <button (click)="showDeleteRoomModal = false" class="btn-secondary text-sm px-5">Cancel</button>
+          <button (click)="deleteRoom()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-5 rounded-lg transition-colors text-sm cursor-pointer">
+            Confirm Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: Delete Room Type Confirmation -->
+  @if (showDeleteTypeModal && deletingType) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 text-center">
+        <p class="text-4xl mb-3">🚨</p>
+        <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Classification: {{ deletingType.name }}?</h3>
+        <p class="text-sm text-gray-500 mb-6 font-medium">
+          Are you sure you want to delete the <strong>{{ deletingType.name }}</strong> classification?
+        </p>
+        <p class="text-xs text-red-500 mb-6 bg-red-50 p-2.5 rounded-lg border border-red-100">
+          Note: This operation will fail if any existing hotel room is currently cataloged under this type.
+        </p>
+        <div class="flex items-center justify-center gap-3">
+          <button (click)="showDeleteTypeModal = false" class="btn-secondary text-sm px-5">Cancel</button>
+          <button (click)="deleteRoomType()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-5 rounded-lg transition-colors text-sm cursor-pointer">
+            Confirm Delete
+          </button>
+        </div>
+      </div>
     </div>
   }
 </div>
