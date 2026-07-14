@@ -60,6 +60,15 @@ connectDB().then(async () => {
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
+app.use(
+  '/menu',
+  express.static(require('path').join(__dirname, '..', 'frontend', 'public', 'menu'))
+);
+app.use(
+  '/table',
+  express.static(require('path').join(__dirname, '..', 'frontend', 'public', 'table'))
+);
 
 app.get('/api/health', (req, res) => {
   res.json({

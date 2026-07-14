@@ -2,410 +2,507 @@
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
       <h2 class="text-2xl font-bold text-gray-900">Restaurant Management</h2>
-      <p class="text-gray-500 mt-1">
-        Menu, orders, room service, billing, and daily sales
-      </p>
+      <p class="text-gray-500 mt-1">Orders, kitchen, tables, billing, sales & shifts</p>
     </div>
-    @if (canManage) {
-      <button type="button" class="btn-primary self-start" (click)="setTab('new-order')">
-        + New Order
-      </button>
-    }
+    <div class="flex gap-2">
+      <a routerLink="/restaurant/kitchen" class="btn-secondary text-sm">Kitchen Display</a>
+      @if (canManage) {
+        <button type="button" class="btn-primary text-sm" (click)="setTab('new-order')">+ New Order</button>
+      }
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-    <div class="card">
-      <p class="text-sm text-gray-500">Menu Items</p>
-      <p class="text-2xl font-bold text-orange-600 mt-1">{{ menu.length }}</p>
-    </div>
-    <div class="card">
-      <p class="text-sm text-gray-500">Active Orders</p>
-      <p class="text-2xl font-bold text-amber-600 mt-1">{{ pendingOrders }}</p>
-    </div>
-    <div class="card">
-      <p class="text-sm text-gray-500">Room Service</p>
-      <p class="text-2xl font-bold text-serenity-700 mt-1">{{ roomServiceCount }}</p>
-    </div>
-    <div class="card">
-      <p class="text-sm text-gray-500">Today's Revenue</p>
-      <p class="text-2xl font-bold text-emerald-600 mt-1">
-        {{ (sales?.revenue || 0) | currency: 'LKR':'symbol':'1.0-0' }}
-      </p>
-    </div>
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div class="card"><p class="text-sm text-gray-500">Menu</p><p class="text-2xl font-bold text-orange-600">{{ menu.length }}</p></div>
+    <div class="card"><p class="text-sm text-gray-500">Active orders</p><p class="text-2xl font-bold text-amber-600">{{ pendingOrders }}</p></div>
+    <div class="card"><p class="text-sm text-gray-500">Room service</p><p class="text-2xl font-bold">{{ roomServiceCount }}</p></div>
+    <div class="card"><p class="text-sm text-gray-500">Today revenue</p><p class="text-2xl font-bold text-emerald-600">{{ (sales?.revenue || 0) | currency: 'LKR':'symbol':'1.0-0' }}</p></div>
   </div>
 
   @if (error) {
-    <div class="card mb-5 flex items-center gap-3 bg-red-50 border-red-200 text-red-700 text-sm">
-      <span>⚠️</span> {{ error }}
-    </div>
+    <div class="card mb-4 bg-red-50 text-red-700 text-sm">{{ error }} <button class="underline ml-2" (click)="error=''">Dismiss</button></div>
   }
   @if (success) {
-    <div class="card mb-5 flex items-center gap-3 bg-green-50 border-green-200 text-green-700 text-sm">
-      <span>✅</span> {{ success }}
-    </div>
+    <div class="card mb-4 bg-green-50 text-green-700 text-sm">{{ success }} <button class="underline ml-2" (click)="success=''">Dismiss</button></div>
   }
 
   <div class="flex flex-wrap gap-2 mb-6">
-    <button type="button" class="badge cursor-pointer" [class]="tab === 'orders' ? 'bg-serenity-600 text-white' : 'bg-white border border-gray-200 text-gray-600'" (click)="setTab('orders')">Orders</button>
-    <button type="button" class="badge cursor-pointer" [class]="tab === 'menu' ? 'bg-serenity-600 text-white' : 'bg-white border border-gray-200 text-gray-600'" (click)="setTab('menu')">Menu</button>
+    @for (t of ['orders','kitchen','menu','tables','sales','shift']; track t) {
+      <button type="button" class="badge cursor-pointer" [class]="tab === t ? 'bg-serenity-600 text-white' : 'bg-white border border-gray-200 text-gray-600'" (click)="setTab($any(t))">
+        {{ t === 'new-order' ? 'Take Order' : (t | titlecase) }}
+      </button>
+    }
     @if (canManage) {
       <button type="button" class="badge cursor-pointer" [class]="tab === 'new-order' ? 'bg-serenity-600 text-white' : 'bg-white border border-gray-200 text-gray-600'" (click)="setTab('new-order')">Take Order</button>
     }
-    <button type="button" class="badge cursor-pointer" [class]="tab === 'sales' ? 'bg-serenity-600 text-white' : 'bg-white border border-gray-200 text-gray-600'" (click)="setTab('sales')">Daily Sales</button>
+  </div>
+
+  <div class="card mb-4 bg-sky-50 border-sky-100 text-sm text-sky-900">
+    <strong>QR table ordering:</strong> stub ready — guests can scan table QR later; staff still place orders here.
   </div>
 
   @if (loading) {
-    <div class="empty-state text-gray-400">
-      <p class="text-4xl mb-3">⏳</p>
-      <p>Loading restaurant data...</p>
-    </div>
+    <div class="empty-state text-gray-400">Loading...</div>
   } @else {
     <!-- ORDERS -->
     @if (tab === 'orders') {
       <div class="card mb-4">
-        <select
-          [(ngModel)]="orderFilter"
-          class="px-4 py-2.5 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-serenity-500"
-        >
+        <select [(ngModel)]="orderFilter" class="px-3 py-2 rounded-lg border text-sm bg-white">
           <option value="">All statuses</option>
-          @for (s of statuses; track s) {
-            <option [value]="s">{{ s }}</option>
-          }
+          @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
         </select>
       </div>
+      <div class="space-y-3">
+        @for (order of filteredOrders; track order._id) {
+          <div class="card">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <h3 class="font-semibold">{{ order.orderType }}</h3>
+              <span [class]="statusClass(order.status)">{{ order.status }}</span>
+              <span class="badge-neutral">{{ order.paymentStatus }}</span>
+              @if (order.tableNumber) { <span class="text-xs text-gray-500">Table {{ order.tableNumber }}</span> }
+              @if (order.estimatedPrepMinutes) { <span class="text-xs text-gray-500">~{{ order.estimatedPrepMinutes }} min</span> }
+            </div>
+            <p class="text-sm text-gray-500 mb-2">
+              {{ order.createdAt | date: 'dd MMM HH:mm' }}
+              @if (order.roomNumber) { · Room {{ order.roomNumber }} }
+              @if (order.guestName) { · {{ order.guestName }} }
+              @if (order.waiter) { · Waiter {{ order.waiter }} }
+            </p>
+              @if (order.guestAllergies) {
+              <p class="text-xs text-amber-700 mb-2">Allergies / diet: {{ order.guestAllergies }}</p>
+            }
+            <ul class="text-sm text-gray-700 mb-2">
+              @for (line of order.items; track $index) {
+                <li>{{ line.quantity }}× {{ line.name }} @if (line.note) { <span class="text-gray-400">({{ line.note }})</span> }</li>
+              }
+            </ul>
+            <p class="text-sm font-semibold mb-3">
+              Total {{ order.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}
+              <span class="text-xs font-normal text-gray-500">
+                (sub {{ (order.subtotal || 0) | currency: 'LKR':'symbol':'1.0-0' }}
+                + tax {{ (order.taxAmount || 0) | currency: 'LKR':'symbol':'1.0-0' }}
+                + svc {{ (order.serviceCharge || 0) | currency: 'LKR':'symbol':'1.0-0' }}
+                @if (order.discountAmount) { − disc {{ order.discountAmount | currency: 'LKR':'symbol':'1.0-0' }} })
+              </span>
+            </p>
+            @if (canManage && order.status !== 'Cancelled') {
+              <div class="flex flex-wrap gap-2">
+                @if (order.status === 'Pending') {
+                  <button type="button" class="text-xs btn-primary" (click)="setStatus(order, 'Preparing')">Preparing</button>
+                }
+                @if (order.status === 'Preparing') {
+                  <button type="button" class="text-xs btn-primary" (click)="setStatus(order, 'Ready')">Ready</button>
+                }
+                @if (order.status === 'Ready') {
+                  <button type="button" class="text-xs btn-primary" (click)="setStatus(order, 'Served')">Served</button>
+                }
+                @if (!['Billed','Cancelled'].includes(order.status)) {
+                  <button type="button" class="text-xs btn-secondary" (click)="editOrder(order)">Edit</button>
+                  <button type="button" class="text-xs bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg" (click)="billOrder(order)">Bill & Receipt</button>
+                  @if (order.roomNumber) {
+                    <button type="button" class="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg" (click)="billOrder(order, true)">Charge to Room</button>
+                  }
+                  <button type="button" class="text-xs bg-amber-50 text-amber-800 px-3 py-1.5 rounded-lg" (click)="openPayment(order)">Partial Pay</button>
+                  <button type="button" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg" (click)="setStatus(order, 'Cancelled')">Cancel</button>
+                }
+                @if (order.status === 'Billed') {
+                  <button type="button" class="text-xs btn-secondary" (click)="openReceipt(order)">Receipt</button>
+                  <button type="button" class="text-xs btn-secondary" (click)="notifyReceipt(order)">Email Receipt</button>
+                }
+              </div>
+            }
+            @if (order.cancelReason) {
+              <p class="text-xs text-red-600 mt-2">Cancel reason: {{ order.cancelReason }}</p>
+            }
+          </div>
+        } @empty {
+          <div class="empty-state text-gray-400">No orders</div>
+        }
+      </div>
+    }
 
-      @if (filteredOrders.length === 0) {
-        <div class="empty-state">
-          <p class="text-4xl mb-3">🍽️</p>
-          <p class="text-gray-500 font-medium">No orders yet</p>
-          @if (canManage) {
-            <button type="button" class="btn-primary mt-4" (click)="setTab('new-order')">Take first order</button>
-          }
-        </div>
-      } @else {
-        <div class="space-y-4">
-          @for (order of filteredOrders; track order._id) {
-            <div class="card">
-              <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                <div class="flex-1">
-                  <div class="flex flex-wrap items-center gap-2 mb-2">
-                    <h3 class="font-semibold text-gray-900">{{ order.orderType }}</h3>
-                    <span [class]="statusClass(order.status)">{{ order.status }}</span>
-                    <span class="badge-neutral">{{ order.paymentStatus }}</span>
-                  </div>
-                  <p class="text-sm text-gray-500">
-                    {{ order.createdAt | date: 'dd MMM yyyy, HH:mm' }}
-                    @if (order.roomNumber) { · Room {{ order.roomNumber }} }
-                    @if (order.guestName) { · {{ order.guestName }} }
-                  </p>
-                  <ul class="mt-3 text-sm text-gray-700 space-y-1">
-                    @for (line of order.items; track $index) {
-                      <li>{{ line.quantity }} × {{ line.name }} — {{ line.price * line.quantity | currency: 'LKR':'symbol':'1.0-0' }}</li>
+    <!-- KITCHEN TAB -->
+    @if (tab === 'kitchen') {
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @for (col of [{s:'Pending',t:'New'},{s:'Preparing',t:'Cooking'},{s:'Ready',t:'Ready'}]; track col.s) {
+          <div class="card">
+            <h3 class="font-semibold mb-3">{{ col.t }}</h3>
+            @for (o of kitchenOrders; track o._id) {
+              @if (o.status === col.s) {
+                <div class="rounded-lg border border-gray-100 p-3 mb-2">
+                  <p class="font-medium text-sm">{{ o.orderType }} @if (o.tableNumber) { · T{{ o.tableNumber }} } @if (o.roomNumber) { · R{{ o.roomNumber }} }</p>
+                  <ul class="text-xs text-gray-600 my-1">
+                    @for (line of o.items; track $index) {
+                      <li>{{ line.quantity }}× {{ line.name }} @if (line.note) { — {{ line.note }} }</li>
                     }
                   </ul>
-                  @if (order.notes) {
-                    <p class="text-sm text-gray-400 mt-2">Note: {{ order.notes }}</p>
-                  }
-                </div>
-                <div class="text-right">
-                  <p class="text-xl font-bold text-gray-900">{{ order.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}</p>
-                  @if (canManage && order.status !== 'Cancelled' && order.status !== 'Billed') {
-                    <div class="flex flex-wrap justify-end gap-2 mt-3">
-                      @if (order.status === 'Pending') {
-                        <button type="button" class="text-xs bg-serenity-50 text-serenity-700 px-3 py-1.5 rounded-lg" (click)="setStatus(order, 'Preparing')">Preparing</button>
-                      }
-                      @if (order.status === 'Preparing') {
-                        <button type="button" class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg" (click)="setStatus(order, 'Ready')">Ready</button>
-                      }
-                      @if (order.status === 'Ready') {
-                        <button type="button" class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg" (click)="setStatus(order, 'Served')">Served</button>
-                      }
-                      <button type="button" class="text-xs bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg" (click)="billOrder(order)">Generate Bill & Receipt</button>
-                      <button type="button" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg" (click)="setStatus(order, 'Cancelled')">Cancel</button>
+                  @if (o.guestAllergies) { <p class="text-xs text-amber-700">Allergies: {{ o.guestAllergies }}</p> }
+                  <p class="text-xs text-gray-400">~{{ o.estimatedPrepMinutes || 15 }} min · {{ o.createdAt | date: 'HH:mm' }}</p>
+                  @if (canManage) {
+                    <div class="mt-2 flex gap-1">
+                      @if (o.status === 'Pending') { <button type="button" class="text-xs btn-primary" (click)="setStatus(o, 'Preparing')">Start</button> }
+                      @if (o.status === 'Preparing') { <button type="button" class="text-xs btn-primary" (click)="setStatus(o, 'Ready')">Ready</button> }
+                      @if (o.status === 'Ready') { <button type="button" class="text-xs btn-primary" (click)="setStatus(o, 'Served')">Served</button> }
                     </div>
                   }
-                  @if (order.status === 'Billed') {
-                    <button type="button" class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg mt-3" (click)="openReceipt(order)">
-                      🧾 View Receipt
-                    </button>
-                  }
                 </div>
-              </div>
-            </div>
-          }
-        </div>
-      }
+              }
+            }
+          </div>
+        }
+      </div>
     }
 
     <!-- MENU -->
     @if (tab === 'menu') {
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="font-semibold text-gray-900">Menu items</h3>
+      <div class="card mb-4 flex flex-wrap gap-2 items-center">
+        <input [(ngModel)]="menuSearch" (ngModelChange)="applyMenuFilter()" placeholder="Search menu..." class="px-3 py-2 rounded-lg border text-sm flex-1 min-w-[12rem]" />
+        <select [(ngModel)]="menuCategoryFilter" (change)="applyMenuFilter()" class="px-3 py-2 rounded-lg border text-sm bg-white">
+          <option value="">All categories</option>
+          @for (c of categories; track c) { <option [value]="c">{{ c }}</option> }
+        </select>
         @if (canManage) {
-          <button type="button" class="btn-primary" (click)="openMenuForm()">+ Add Item</button>
+          <button type="button" class="btn-primary text-sm" (click)="openMenuForm()">+ Item</button>
         }
       </div>
-
-      @if (showMenuForm && canManage) {
-        <div class="card mb-6 space-y-3">
-          <h4 class="font-medium text-gray-800">{{ editingMenuId ? 'Edit item' : 'New menu item' }}</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input [(ngModel)]="menuForm.name" placeholder="Name *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-            <select [(ngModel)]="menuForm.category" class="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
-              @for (c of categories; track c) {
-                <option [value]="c">{{ c }}</option>
-              }
-            </select>
-            <input type="number" [(ngModel)]="menuForm.price" placeholder="Price *" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-            <input type="number" [(ngModel)]="menuForm.preparationTime" placeholder="Prep minutes" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-            <input [(ngModel)]="menuForm.description" placeholder="Description" class="px-3 py-2 rounded-lg border border-gray-200 text-sm sm:col-span-2" />
+      @if (showMenuForm) {
+        <div class="card mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input [(ngModel)]="menuForm.name" placeholder="Name" class="px-3 py-2 rounded-lg border text-sm" />
+          <select [(ngModel)]="menuForm.category" class="px-3 py-2 rounded-lg border text-sm bg-white">
+            @for (c of categories; track c) { <option [value]="c">{{ c }}</option> }
+          </select>
+          <input type="number" [(ngModel)]="menuForm.price" placeholder="Price" class="px-3 py-2 rounded-lg border text-sm" />
+          <input type="number" [(ngModel)]="menuForm.happyHourPrice" placeholder="Happy hour price" class="px-3 py-2 rounded-lg border text-sm" />
+          <input type="number" [(ngModel)]="menuForm.happyHourStart" placeholder="HH start hour" class="px-3 py-2 rounded-lg border text-sm" />
+          <input type="number" [(ngModel)]="menuForm.happyHourEnd" placeholder="HH end hour" class="px-3 py-2 rounded-lg border text-sm" />
+          <input type="number" [(ngModel)]="menuForm.preparationTime" placeholder="Prep mins" class="px-3 py-2 rounded-lg border text-sm" />
+          <input type="number" [(ngModel)]="menuForm.stock" placeholder="Stock (blank=∞)" class="px-3 py-2 rounded-lg border text-sm" />
+          <input [(ngModel)]="menuForm.allergens" placeholder="Allergens" class="px-3 py-2 rounded-lg border text-sm sm:col-span-2" />
+          <input [(ngModel)]="menuForm.image" placeholder="Image URL (or upload below)" class="px-3 py-2 rounded-lg border text-sm sm:col-span-2" />
+          <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
+            @if (menuFormPreviewUrl; as preview) {
+              <img [src]="preview" alt="" class="h-16 w-24 object-cover rounded-lg border border-gray-100" />
+            }
+            @if (editingMenuId) {
+              <label class="text-sm btn-secondary cursor-pointer">
+                Upload image
+                <input type="file" accept="image/*" class="hidden" (change)="onMenuImageSelected($event)" />
+              </label>
+            } @else {
+              <p class="text-xs text-gray-400">Save the item first to upload a file, or paste an image URL above.</p>
+            }
           </div>
-          <div class="flex gap-2">
-            <button type="button" class="btn-primary" (click)="saveMenuItem()">Save</button>
-            <button type="button" class="btn-secondary" (click)="showMenuForm = false">Cancel</button>
+          <textarea [(ngModel)]="menuForm.description" placeholder="Description" class="px-3 py-2 rounded-lg border text-sm sm:col-span-2"></textarea>
+          <label class="text-sm flex items-center gap-2"><input type="checkbox" [(ngModel)]="menuForm.isCombo" /> Combo / set menu</label>
+          <div class="sm:col-span-2 flex gap-2">
+            <button type="button" class="btn-primary text-sm" (click)="saveMenuItem()">Save</button>
+            <button type="button" class="btn-secondary text-sm" (click)="showMenuForm=false">Cancel</button>
           </div>
         </div>
       }
-
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        @for (item of menu; track item._id) {
-          <div class="card">
-            <div class="flex items-start justify-between gap-2 mb-2">
-              <div>
-                <h4 class="font-semibold text-gray-900">{{ item.name }}</h4>
-                <p class="text-xs text-gray-400">{{ item.category }} · {{ item.preparationTime || 15 }} min</p>
-              </div>
-              <span [class]="item.available ? 'badge-success' : 'badge-danger'">
-                {{ item.available ? 'Available' : 'Unavailable' }}
-              </span>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (item of filteredMenu; track item._id) {
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="h-44 bg-stone-100 overflow-hidden">
+              @if (imageUrl(item); as src) {
+                <img [src]="src" [alt]="item.name" class="h-44 w-full object-cover block" loading="lazy" />
+              }
             </div>
-            <p class="text-sm text-gray-500 mb-3">{{ item.description || 'No description' }}</p>
-            <p class="font-bold text-serenity-700 mb-3">{{ item.price | currency: 'LKR':'symbol':'1.0-0' }}</p>
-            @if (canManage) {
-              <div class="flex flex-wrap gap-2">
-                <button type="button" class="text-xs bg-serenity-50 text-serenity-700 px-3 py-1.5 rounded-lg" (click)="openMenuForm(item)">Edit</button>
-                <button type="button" class="text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg" (click)="toggleAvailability(item)">
-                  {{ item.available ? 'Mark Unavailable' : 'Mark Available' }}
-                </button>
-                <button type="button" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg" (click)="deleteMenuItem(item)">Delete</button>
+            <div class="p-4">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div>
+                  <h4 class="font-semibold text-gray-900">{{ item.name }}</h4>
+                  <p class="text-xs text-gray-400">{{ item.category }} · {{ item.preparationTime || 15 }} min</p>
+                </div>
+                <span [class]="item.available ? 'badge-success' : 'badge-danger'">
+                  {{ item.available ? 'Available' : 'Unavailable' }}
+                </span>
               </div>
-            }
+              <p class="text-sm text-gray-500 mb-2">{{ item.description || 'No description' }}</p>
+              <p class="font-bold text-serenity-700 mb-3">{{ priceOf(item) | currency: 'LKR':'symbol':'1.0-0' }}</p>
+              @if (item.allergens) { <p class="text-xs text-amber-700 mb-2">Allergens: {{ item.allergens }}</p> }
+              @if (canManage) {
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" class="text-xs bg-serenity-50 text-serenity-700 px-3 py-1.5 rounded-lg" (click)="openMenuForm(item)">Edit</button>
+                  <button type="button" class="text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg" (click)="toggleAvailability(item)">
+                    {{ item.available ? 'Mark Unavailable' : 'Mark Available' }}
+                  </button>
+                  <button type="button" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg" (click)="deleteMenuItem(item)">Delete</button>
+                </div>
+              }
+            </div>
           </div>
         }
       </div>
     }
 
-    <!-- NEW ORDER -->
-    @if (tab === 'new-order' && canManage) {
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-2">
-          <h3 class="font-semibold text-gray-900 mb-4">Available menu</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <!-- TAKE ORDER -->
+    @if (tab === 'new-order') {
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-3">
+          <div class="card flex flex-wrap gap-2">
+            <input [(ngModel)]="menuSearch" (ngModelChange)="applyMenuFilter()" placeholder="Search..." class="px-3 py-2 rounded-lg border text-sm flex-1" />
+            <select [(ngModel)]="menuCategoryFilter" (change)="applyMenuFilter()" class="px-3 py-2 rounded-lg border text-sm bg-white">
+              <option value="">All</option>
+              @for (c of categories; track c) { <option [value]="c">{{ c }}</option> }
+            </select>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             @for (item of availableMenu; track item._id) {
-              <button type="button" class="card text-left hover:border-serenity-200 transition-colors" (click)="addToCart(item)">
-                <p class="font-medium text-gray-900">{{ item.name }}</p>
-                <p class="text-xs text-gray-400">{{ item.category }}</p>
-                <p class="text-sm font-semibold text-serenity-700 mt-1">{{ item.price | currency: 'LKR':'symbol':'1.0-0' }}</p>
+              <button type="button" class="bg-white rounded-xl border border-gray-100 shadow-sm text-left hover:border-serenity-400 overflow-hidden" (click)="addToCart(item)">
+                @if (imageUrl(item); as src) {
+                  <img [src]="src" [alt]="item.name" class="h-28 w-full object-cover" loading="lazy" />
+                }
+                <div class="p-3">
+                  <p class="font-medium text-sm">{{ item.name }}</p>
+                  <p class="text-xs text-serenity-700">{{ priceOf(item) | currency: 'LKR':'symbol':'1.0-0' }} @if (item.isHappyHour) { · HH }</p>
+                </div>
               </button>
             }
           </div>
         </div>
-        <div class="card h-fit space-y-4">
-          <h3 class="font-semibold text-gray-900">Current order</h3>
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Order type</label>
-            <select [(ngModel)]="orderType" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
-              @for (t of orderTypes; track t) {
-                <option [value]="t">{{ t }}</option>
+        <div class="card space-y-3">
+          <h3 class="font-semibold">{{ editingOrderId ? 'Edit order' : 'Cart' }}</h3>
+          <select [(ngModel)]="orderType" class="w-full px-3 py-2 rounded-lg border text-sm bg-white">
+            @for (t of orderTypes; track t) { <option [value]="t">{{ t }}</option> }
+          </select>
+          @if (orderType === 'Dine-In') {
+            <select [(ngModel)]="tableId" class="w-full px-3 py-2 rounded-lg border text-sm bg-white">
+              <option value="">Select table</option>
+              @for (t of tables; track t._id) {
+                <option [value]="t._id">{{ t.tableNumber }} ({{ t.status }})</option>
               }
             </select>
-          </div>
+          }
           @if (orderType === 'Room Service') {
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Room number *</label>
-              <input [(ngModel)]="roomNumber" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="e.g. 201" />
+            <select [(ngModel)]="roomNumber" class="w-full px-3 py-2 rounded-lg border text-sm bg-white">
+              <option value="">Room number</option>
+              @for (r of rooms; track r._id) { <option [value]="r.roomNumber">{{ r.roomNumber }}</option> }
+            </select>
+          }
+          <select [(ngModel)]="guestId" (change)="onGuestChange()" class="w-full px-3 py-2 rounded-lg border text-sm bg-white">
+            <option value="">Guest (optional)</option>
+            @for (g of guests; track g._id) {
+              <option [value]="g._id">{{ g.firstName }} {{ g.lastName }}</option>
+            }
+          </select>
+          @if (selectedGuestAllergies) {
+            <p class="text-xs text-amber-700">Guest diet/allergies: {{ selectedGuestAllergies }}</p>
+          }
+          <input [(ngModel)]="guestName" placeholder="Guest name" class="w-full px-3 py-2 rounded-lg border text-sm" />
+          <input [(ngModel)]="waiter" placeholder="Waiter / server" class="w-full px-3 py-2 rounded-lg border text-sm" />
+          <input type="number" [(ngModel)]="discountPercent" min="0" max="100" placeholder="Discount %" class="w-full px-3 py-2 rounded-lg border text-sm" />
+          <textarea [(ngModel)]="notes" placeholder="Order notes" class="w-full px-3 py-2 rounded-lg border text-sm"></textarea>
+
+          @for (line of cart; track line.item._id; let i = $index) {
+            <div class="border-b border-gray-50 pb-2 text-sm">
+              <div class="flex justify-between">
+                <span>{{ line.item.name }}</span>
+                <span>{{ (priceOf(line.item) * line.quantity) | currency: 'LKR':'symbol':'1.0-0' }}</span>
+              </div>
+              <div class="flex items-center gap-2 mt-1">
+                <button type="button" class="px-2 border rounded" (click)="changeQty(i, -1)">−</button>
+                <span>{{ line.quantity }}</span>
+                <button type="button" class="px-2 border rounded" (click)="changeQty(i, 1)">+</button>
+                <input [(ngModel)]="line.note" placeholder="Item note" class="flex-1 px-2 py-1 border rounded text-xs" />
+              </div>
             </div>
           }
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Guest name</label>
-            <input [(ngModel)]="guestName" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+          <div class="text-sm space-y-1">
+            <div class="flex justify-between"><span>Subtotal</span><span>{{ cartSubtotal | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+            <div class="flex justify-between"><span>Tax 10%</span><span>{{ cartTax | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+            <div class="flex justify-between"><span>Service 5%</span><span>{{ cartService | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+            @if (cartDiscount) {
+              <div class="flex justify-between text-green-700"><span>Discount</span><span>−{{ cartDiscount | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+            }
+            <div class="flex justify-between font-bold text-base"><span>Total</span><span>{{ cartTotal | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
           </div>
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Notes</label>
-            <textarea [(ngModel)]="notes" rows="2" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"></textarea>
-          </div>
-
-          @if (cart.length === 0) {
-            <p class="text-sm text-gray-400">Click menu items to add them.</p>
-          } @else {
-            <ul class="space-y-2 text-sm">
-              @for (line of cart; track line.item._id; let i = $index) {
-                <li class="flex items-center justify-between gap-2">
-                  <span>{{ line.item.name }}</span>
-                  <div class="flex items-center gap-2">
-                    <button type="button" class="px-2 rounded bg-gray-100" (click)="changeQty(i, -1)">−</button>
-                    <span>{{ line.quantity }}</span>
-                    <button type="button" class="px-2 rounded bg-gray-100" (click)="changeQty(i, 1)">+</button>
-                  </div>
-                </li>
-              }
-            </ul>
-            <p class="font-bold text-gray-900">Total: {{ cartTotal | currency: 'LKR':'symbol':'1.0-0' }}</p>
-            <button type="button" class="btn-primary w-full" (click)="placeOrder()">Place Order</button>
-          }
+          <button type="button" class="btn-primary w-full" (click)="placeOrder()">{{ editingOrderId ? 'Update Order' : 'Place Order' }}</button>
         </div>
+      </div>
+    }
+
+    <!-- TABLES -->
+    @if (tab === 'tables') {
+      @if (canManage) {
+        <div class="card mb-4 grid grid-cols-1 sm:grid-cols-4 gap-2">
+          <input [(ngModel)]="newTable.tableNumber" placeholder="Table #" class="px-3 py-2 rounded-lg border text-sm" />
+          <input type="number" [(ngModel)]="newTable.capacity" placeholder="Capacity" class="px-3 py-2 rounded-lg border text-sm" />
+          <input [(ngModel)]="newTable.location" placeholder="Location" class="px-3 py-2 rounded-lg border text-sm" />
+          <button type="button" class="btn-primary text-sm" (click)="createTable()">Add table</button>
+        </div>
+      }
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        @for (t of tables; track t._id) {
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="h-36 bg-stone-100 overflow-hidden">
+              @if (tableImageUrl(t); as src) {
+                <img [src]="src" [alt]="t.tableNumber" class="h-36 w-full object-cover block" loading="lazy" />
+              }
+            </div>
+            <div class="p-4">
+              <p class="font-bold text-lg">{{ t.tableNumber }}</p>
+              <p class="text-xs text-gray-500">Cap {{ t.capacity }} · {{ t.location }}</p>
+              <span [class]="tableStatusClass(t.status)" class="mt-2 inline-block">{{ t.status }}</span>
+              @if (canManage) {
+                <div class="flex flex-wrap gap-1 mt-2">
+                  <button type="button" class="text-xs underline" (click)="setTableStatus(t, 'Available')">Free</button>
+                  <button type="button" class="text-xs underline" (click)="setTableStatus(t, 'Reserved')">Reserve</button>
+                  <button type="button" class="text-xs underline" (click)="setTableStatus(t, 'Cleaning')">Clean</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
     }
 
     <!-- SALES -->
     @if (tab === 'sales') {
-      <div class="card mb-6 flex flex-col sm:flex-row gap-4 sm:items-end">
+      <div class="card mb-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label class="block text-sm text-gray-600 mb-1">Date</label>
-          <input type="date" [(ngModel)]="salesDate" (change)="loadSales()" class="px-4 py-2.5 rounded-lg border border-gray-200 text-sm" />
+          <label class="text-xs text-gray-500">Day</label>
+          <input type="date" [(ngModel)]="salesDate" (change)="loadSales()" class="block px-3 py-2 rounded-lg border text-sm" />
         </div>
-        <button type="button" class="btn-secondary" (click)="loadSales()">Refresh</button>
+        <div>
+          <label class="text-xs text-gray-500">From</label>
+          <input type="date" [(ngModel)]="rangeFrom" class="block px-3 py-2 rounded-lg border text-sm" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-500">To</label>
+          <input type="date" [(ngModel)]="rangeTo" class="block px-3 py-2 rounded-lg border text-sm" />
+        </div>
+        <button type="button" class="btn-primary text-sm" (click)="loadRangeSales()">Range report</button>
       </div>
-
-      @if (sales) {
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div class="card">
-            <p class="text-sm text-gray-500">Orders</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ sales.totalOrders }}</p>
-          </div>
-          <div class="card">
-            <p class="text-sm text-gray-500">Billed</p>
-            <p class="text-2xl font-bold text-serenity-700 mt-1">{{ sales.billedOrders }}</p>
-          </div>
-          <div class="card">
-            <p class="text-sm text-gray-500">Revenue</p>
-            <p class="text-2xl font-bold text-emerald-600 mt-1">{{ sales.revenue | currency: 'LKR':'symbol':'1.0-0' }}</p>
-          </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div class="card"><p class="text-sm text-gray-500">Orders</p><p class="text-2xl font-bold">{{ sales?.totalOrders || 0 }}</p></div>
+        <div class="card"><p class="text-sm text-gray-500">Billed</p><p class="text-2xl font-bold">{{ sales?.billedOrders || 0 }}</p></div>
+        <div class="card"><p class="text-sm text-gray-500">Revenue</p><p class="text-2xl font-bold">{{ (sales?.revenue || 0) | currency: 'LKR':'symbol':'1.0-0' }}</p></div>
+        <div class="card">
+          <p class="text-sm text-gray-500">By type</p>
+          @for (e of salesByTypeEntries; track e.key) {
+            <p class="text-xs">{{ e.key }}: {{ e.value }}</p>
+          }
         </div>
-
-        <div class="card mb-6">
-          <h3 class="font-semibold text-gray-900 mb-3">Orders by type</h3>
-          <div class="flex flex-wrap gap-3">
-            @for (entry of salesByTypeEntries; track entry.key) {
-              <span class="badge-neutral">{{ entry.key }}: {{ entry.value }}</span>
-            } @empty {
-              <p class="text-sm text-gray-400">No orders for this date.</p>
-            }
+      </div>
+      <div class="card mb-4">
+        <h3 class="font-semibold mb-2">Popular items (day)</h3>
+        @for (p of sales?.popularItems || []; track p.name) {
+          <div class="flex justify-between text-sm border-b border-gray-50 py-1">
+            <span>{{ p.name }} ×{{ p.qty }}</span>
+            <span>{{ p.revenue | currency: 'LKR':'symbol':'1.0-0' }}</span>
           </div>
-        </div>
-
-        <div class="card overflow-hidden p-0">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="bg-gray-50 border-b border-gray-100">
-                <th class="text-left px-4 py-3 font-semibold text-gray-600">Time</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-600">Type</th>
-                <th class="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                <th class="text-right px-4 py-3 font-semibold text-gray-600">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (o of sales.orders; track o._id) {
-                <tr class="border-b border-gray-50">
-                  <td class="px-4 py-3">{{ o.createdAt | date: 'HH:mm' }}</td>
-                  <td class="px-4 py-3">{{ o.orderType }}</td>
-                  <td class="px-4 py-3"><span [class]="statusClass(o.status)">{{ o.status }}</span></td>
-                  <td class="px-4 py-3 text-right font-semibold">{{ o.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="4" class="px-4 py-10 text-center text-gray-400">No sales recorded.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        } @empty { <p class="text-sm text-gray-400">No data</p> }
+      </div>
+      @if (rangeSales) {
+        <div class="card">
+          <h3 class="font-semibold mb-2">Range {{ rangeFrom }} → {{ rangeTo }}</h3>
+          <p class="text-sm">Orders: {{ rangeSales.totalOrders }} · Revenue: {{ rangeSales.revenue | currency: 'LKR':'symbol':'1.0-0' }} · Avg ticket: {{ rangeSales.avgTicket | currency: 'LKR':'symbol':'1.0-0' }}</p>
+          <h4 class="text-sm font-medium mt-3 mb-1">Top items</h4>
+          @for (p of rangeSales.popularItems || []; track p.name) {
+            <div class="flex justify-between text-sm py-1 border-b border-gray-50"><span>{{ p.name }}</span><span>{{ p.revenue | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+          }
         </div>
       }
+    }
+
+    <!-- SHIFT -->
+    @if (tab === 'shift') {
+      <div class="card mb-4">
+        @if (shift) {
+          <p class="font-semibold text-green-700">Shift open since {{ shift.openedAt | date: 'dd MMM HH:mm' }}</p>
+          <p class="text-sm text-gray-500">Opened by {{ shift.openedBy }} · Float {{ (shift.openingCash || 0) | currency: 'LKR':'symbol':'1.0-0' }}</p>
+          @if (canManage) {
+            <div class="mt-3 flex flex-wrap gap-2 items-end">
+              <input type="number" [(ngModel)]="closingCash" placeholder="Closing cash" class="px-3 py-2 rounded-lg border text-sm" />
+              <input [(ngModel)]="shiftNotes" placeholder="Notes" class="px-3 py-2 rounded-lg border text-sm" />
+              <button type="button" class="btn-primary text-sm" (click)="closeShift()">Close shift</button>
+            </div>
+          }
+        } @else {
+          <p class="text-gray-500 mb-3">No open shift.</p>
+          @if (canManage) {
+            <div class="flex gap-2 items-end">
+              <input type="number" [(ngModel)]="openingCash" placeholder="Opening cash" class="px-3 py-2 rounded-lg border text-sm" />
+              <button type="button" class="btn-primary text-sm" (click)="openShift()">Open shift</button>
+            </div>
+          }
+        }
+      </div>
+      <div class="card">
+        <h3 class="font-semibold mb-2">Recent shifts</h3>
+        @for (s of shifts; track s._id) {
+          <div class="text-sm border-b border-gray-50 py-2 flex justify-between">
+            <span>{{ s.openedAt | date: 'dd MMM HH:mm' }} → {{ s.closedAt ? (s.closedAt | date: 'HH:mm') : 'open' }} · {{ s.status }}</span>
+            <span>{{ (s.revenue || 0) | currency: 'LKR':'symbol':'1.0-0' }}</span>
+          </div>
+        }
+      </div>
     }
   }
 </div>
 
-<!-- Receipt modal -->
+<!-- Cancel modal -->
+@if (cancelOrderId) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 no-print">
+    <div class="bg-white rounded-xl p-5 w-full max-w-md space-y-3">
+      <h3 class="font-semibold">Cancel order</h3>
+      <input [(ngModel)]="cancelReason" placeholder="Reason" class="w-full px-3 py-2 rounded-lg border text-sm" />
+      <div class="flex gap-2 justify-end">
+        <button type="button" class="btn-secondary text-sm" (click)="cancelOrderId=''">Back</button>
+        <button type="button" class="btn-primary text-sm" (click)="confirmCancel()">Confirm cancel</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Payment modal -->
+@if (paymentOrder) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 no-print">
+    <div class="bg-white rounded-xl p-5 w-full max-w-md space-y-3">
+      <h3 class="font-semibold">Partial payment</h3>
+      <input type="number" [(ngModel)]="paymentAmount" class="w-full px-3 py-2 rounded-lg border text-sm" />
+      <select [(ngModel)]="paymentMethod" class="w-full px-3 py-2 rounded-lg border text-sm bg-white">
+        <option>Cash</option><option>Card</option><option>Transfer</option><option>Other</option>
+      </select>
+      <div class="flex gap-2 justify-end">
+        <button type="button" class="btn-secondary text-sm" (click)="paymentOrder=null">Close</button>
+        <button type="button" class="btn-primary text-sm" (click)="submitPayment()">Save</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Receipt -->
 @if (showReceipt && receiptOrder) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:static print:bg-transparent print:p-0">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto print:shadow-none print:max-w-none print:rounded-none">
-      <div class="p-4 border-b border-gray-100 flex items-center justify-between print:hidden">
-        <h3 class="font-semibold text-gray-900">Restaurant Receipt</h3>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between p-4 border-b no-print">
+        <h3 class="font-semibold">Receipt</h3>
         <div class="flex gap-2">
-          <button type="button" class="btn-primary text-sm" (click)="printReceipt()">🖨 Print</button>
+          <button type="button" class="btn-primary text-sm" (click)="printReceipt()">Print</button>
+          <button type="button" class="btn-secondary text-sm" (click)="notifyReceipt(receiptOrder!)">Email</button>
           <button type="button" class="btn-secondary text-sm" (click)="closeReceipt()">Close</button>
         </div>
       </div>
-
-      <div id="restaurant-receipt" class="p-6 text-gray-800">
-        <div class="text-center mb-5">
-          <h2 class="text-xl font-bold tracking-tight">Serenity Suites</h2>
-          <p class="text-sm text-gray-500">Restaurant Receipt</p>
-          <p class="text-xs text-gray-400 mt-1">Receipt #{{ receiptId(receiptOrder) }}</p>
+      <div id="restaurant-receipt" class="p-6 text-sm space-y-2">
+        <div class="text-center mb-3">
+          <h2 class="text-xl font-bold">Serenity Suites</h2>
+          <p class="text-gray-500">Restaurant Receipt #{{ receiptId(receiptOrder) }}</p>
         </div>
-
-        <div class="border-t border-b border-dashed border-gray-300 py-3 text-sm space-y-1 mb-4">
-          <div class="flex justify-between">
-            <span class="text-gray-500">Date</span>
-            <span>{{ (receiptOrder.billedAt || receiptOrder.createdAt) | date: 'dd MMM yyyy, HH:mm' }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-500">Order type</span>
-            <span>{{ receiptOrder.orderType }}</span>
-          </div>
-          @if (receiptOrder.roomNumber) {
-            <div class="flex justify-between">
-              <span class="text-gray-500">Room</span>
-              <span>{{ receiptOrder.roomNumber }}</span>
-            </div>
+        @for (line of receiptOrder.items; track $index) {
+          <div class="flex justify-between"><span>{{ line.quantity }}× {{ line.name }}</span><span>{{ (line.price * line.quantity) | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+        }
+        <div class="border-t pt-2 space-y-1">
+          <div class="flex justify-between"><span>Subtotal</span><span>{{ (receiptOrder.subtotal || 0) | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+          <div class="flex justify-between"><span>Tax</span><span>{{ (receiptOrder.taxAmount || 0) | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+          <div class="flex justify-between"><span>Service</span><span>{{ (receiptOrder.serviceCharge || 0) | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+          @if (receiptOrder.discountAmount) {
+            <div class="flex justify-between"><span>Discount</span><span>−{{ receiptOrder.discountAmount | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
           }
-          @if (receiptOrder.guestName) {
-            <div class="flex justify-between">
-              <span class="text-gray-500">Guest</span>
-              <span>{{ receiptOrder.guestName }}</span>
-            </div>
-          }
-          <div class="flex justify-between">
-            <span class="text-gray-500">Payment</span>
-            <span>{{ receiptOrder.paymentStatus }}</span>
-          </div>
+          <div class="flex justify-between font-bold text-base"><span>Total</span><span>{{ receiptOrder.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+          <div class="flex justify-between"><span>Payment</span><span>{{ receiptOrder.paymentStatus }}</span></div>
         </div>
-
-        <table class="w-full text-sm mb-4">
-          <thead>
-            <tr class="text-left text-gray-500 border-b border-gray-200">
-              <th class="py-2 font-medium">Item</th>
-              <th class="py-2 font-medium text-center">Qty</th>
-              <th class="py-2 font-medium text-right">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (line of receiptOrder.items; track $index) {
-              <tr class="border-b border-gray-50">
-                <td class="py-2">
-                  <p class="font-medium">{{ line.name }}</p>
-                  <p class="text-xs text-gray-400">{{ line.price | currency: 'LKR':'symbol':'1.0-0' }} each</p>
-                </td>
-                <td class="py-2 text-center">{{ line.quantity }}</td>
-                <td class="py-2 text-right font-medium">
-                  {{ line.price * line.quantity | currency: 'LKR':'symbol':'1.0-0' }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-
-        <div class="border-t border-gray-300 pt-3 space-y-1 text-sm">
-          <div class="flex justify-between font-bold text-base">
-            <span>Total</span>
-            <span>{{ receiptOrder.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}</span>
-          </div>
-          <p class="text-xs text-gray-400 pt-2">Status: {{ receiptOrder.status }}</p>
-        </div>
-
-        <p class="text-center text-xs text-gray-400 mt-6">
-          Thank you for dining at Serenity Suites
-        </p>
       </div>
     </div>
   </div>

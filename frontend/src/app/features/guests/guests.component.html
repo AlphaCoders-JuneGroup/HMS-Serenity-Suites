@@ -2,172 +2,158 @@
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
       <h2 class="text-2xl font-bold text-gray-900">Guest Management</h2>
-      <p class="text-gray-500 mt-1">
-        Register guests, update profiles, and review stay history
-      </p>
+      <p class="text-gray-500 mt-1">Profiles, loyalty, preferences, and stay history</p>
     </div>
-    @if (canManageGuests) {
-      <a routerLink="/guests/new" class="btn-primary self-start">+ Register Guest</a>
-    }
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="btn-secondary text-sm" (click)="exportCsv()">Export CSV</button>
+      @if (canManageGuests) {
+        <button type="button" class="btn-secondary text-sm" (click)="showMerge = !showMerge">Merge</button>
+        <a routerLink="/guests/new" class="btn-primary text-sm">+ Register Guest</a>
+      }
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-    <div class="card">
-      <div class="flex items-center gap-3">
-        <div class="stat-icon bg-green-50">👥</div>
-        <div>
-          <p class="text-sm text-gray-500">Total Guests</p>
-          <p class="text-2xl font-bold text-green-600">{{ guests.length }}</p>
-        </div>
-      </div>
+  @if (birthdays.length || anniversaries.length) {
+    <div class="card mb-4 bg-amber-50 border-amber-100 text-sm text-amber-900">
+      @if (birthdays.length) {
+        <p><strong>Birthdays today:</strong> @for (g of birthdays; track g._id) { {{ g.firstName }} {{ g.lastName }} }</p>
+      }
+      @if (anniversaries.length) {
+        <p class="mt-1"><strong>Anniversaries today:</strong> @for (g of anniversaries; track g._id) { {{ g.firstName }} {{ g.lastName }} }</p>
+      }
     </div>
-    <div class="card">
-      <div class="flex items-center gap-3">
-        <div class="stat-icon bg-serenity-50">🪪</div>
-        <div>
-          <p class="text-sm text-gray-500">ID Verified</p>
-          <p class="text-2xl font-bold text-serenity-700">{{ withIdCount }}</p>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="flex items-center gap-3">
-        <div class="stat-icon bg-violet-50">🌍</div>
-        <div>
-          <p class="text-sm text-gray-500">Nationalities</p>
-          <p class="text-2xl font-bold text-violet-600">{{ nationalityCount }}</p>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="flex items-center gap-3">
-        <div class="stat-icon bg-amber-50">🏠</div>
-        <div>
-          <p class="text-sm text-gray-500">Local Guests</p>
-          <p class="text-2xl font-bold text-amber-600">{{ localCount }}</p>
-        </div>
-      </div>
-    </div>
+  }
+
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div class="card"><p class="text-sm text-gray-500">Total</p><p class="text-2xl font-bold">{{ total }}</p></div>
+    <div class="card"><p class="text-sm text-gray-500">VIP (page)</p><p class="text-2xl font-bold text-green-600">{{ vipCount }}</p></div>
+    <div class="card"><p class="text-sm text-gray-500">Corporate (page)</p><p class="text-2xl font-bold text-blue-600">{{ corporateCount }}</p></div>
+    <div class="card"><p class="text-sm text-gray-500">Blacklisted (page)</p><p class="text-2xl font-bold text-red-600">{{ blacklistCount }}</p></div>
   </div>
 
   @if (error) {
-    <div class="card mb-5 flex items-center gap-3 bg-red-50 border-red-200 text-red-700 text-sm">
-      <span>⚠️</span> {{ error }}
-    </div>
+    <div class="card mb-4 bg-red-50 text-red-700 text-sm">{{ error }} <button class="underline ml-2" (click)="error=''">Dismiss</button></div>
   }
   @if (success) {
-    <div class="card mb-5 flex items-center gap-3 bg-green-50 border-green-200 text-green-700 text-sm">
-      <span>✅</span> {{ success }}
+    <div class="card mb-4 bg-green-50 text-green-700 text-sm">{{ success }} <button class="underline ml-2" (click)="success=''">Dismiss</button></div>
+  }
+
+  @if (showMerge && canManageGuests) {
+    <div class="card mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <select [(ngModel)]="mergePrimary" class="px-3 py-2 rounded-lg border text-sm bg-white">
+        <option value="">Primary guest (keep)</option>
+        @for (g of guests; track g._id) {
+          <option [value]="g._id">{{ g.firstName }} {{ g.lastName }}</option>
+        }
+      </select>
+      <select [(ngModel)]="mergeSecondary" class="px-3 py-2 rounded-lg border text-sm bg-white">
+        <option value="">Secondary (merge into primary)</option>
+        @for (g of guests; track g._id) {
+          <option [value]="g._id">{{ g.firstName }} {{ g.lastName }}</option>
+        }
+      </select>
+      <button type="button" class="btn-primary text-sm" (click)="submitMerge()">Merge guests</button>
     </div>
   }
 
   <div class="card mb-6">
-    <div class="flex flex-col sm:flex-row gap-4 sm:items-center">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
       <input
         type="text"
         [(ngModel)]="searchTerm"
-        (ngModelChange)="applyFilters()"
-        placeholder="Search by name, email, phone, ID number, or nationality..."
-        class="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-serenity-500 text-sm"
+        (keyup.enter)="search()"
+        placeholder="Search name, email, phone, company..."
+        class="lg:col-span-2 px-4 py-2.5 rounded-lg border border-gray-200 text-sm"
       />
-      <span class="text-sm text-gray-400 whitespace-nowrap">
-        {{ filteredGuests.length }} of {{ guests.length }} guests
-      </span>
+      <select [(ngModel)]="loyaltyFilter" (change)="search()" class="px-3 py-2 rounded-lg border text-sm bg-white">
+        <option value="">All tiers</option>
+        <option value="Regular">Regular</option>
+        <option value="VIP">VIP</option>
+        <option value="Corporate">Corporate</option>
+      </select>
+      <select [(ngModel)]="blacklistFilter" (change)="search()" class="px-3 py-2 rounded-lg border text-sm bg-white">
+        <option value="">All guests</option>
+        <option value="true">Blacklisted</option>
+        <option value="false">Not blacklisted</option>
+      </select>
+      <label class="flex items-center gap-2 text-sm text-gray-600">
+        <input type="checkbox" [(ngModel)]="showArchived" (change)="search()" /> Archived
+      </label>
+    </div>
+    <div class="mt-3 flex gap-2">
+      <button type="button" class="btn-primary text-sm" (click)="search()">Search</button>
+      <button type="button" class="btn-secondary text-sm" (click)="searchTerm=''; loyaltyFilter=''; blacklistFilter=''; showArchived=false; search()">Reset</button>
     </div>
   </div>
 
   @if (loading) {
-    <div class="empty-state text-gray-400">
-      <p class="text-4xl mb-3">⏳</p>
-      <p>Loading guests...</p>
-    </div>
+    <div class="empty-state text-gray-400">Loading guests...</div>
+  } @else if (guests.length === 0) {
+    <div class="empty-state text-gray-400">No guests found</div>
   } @else {
-    <div class="card overflow-hidden p-0">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="text-left px-6 py-4 font-semibold text-gray-600">Guest</th>
-              <th class="text-left px-6 py-4 font-semibold text-gray-600">Contact</th>
-              <th class="text-left px-6 py-4 font-semibold text-gray-600">Location</th>
-              <th class="text-left px-6 py-4 font-semibold text-gray-600">ID</th>
-              <th class="text-left px-6 py-4 font-semibold text-gray-600">Nationality</th>
-              <th class="text-right px-6 py-4 font-semibold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (guest of filteredGuests; track guest._id || guest.email) {
-              <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-semibold text-sm flex-shrink-0">
-                      {{ guest.firstName.charAt(0).toUpperCase() || '?' }}
-                    </div>
-                    <div>
-                      <p class="font-medium text-gray-800">{{ guest.firstName }} {{ guest.lastName }}</p>
-                      <p class="text-xs text-gray-400">{{ guest.email }}</p>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-gray-600">{{ guest.phone || '—' }}</td>
-                <td class="px-6 py-4 text-gray-500">{{ location(guest) }}</td>
-                <td class="px-6 py-4">
-                  @if (guest.idType) {
-                    <span class="badge-neutral">{{ guest.idType }}</span>
-                    <p class="text-xs text-gray-400 mt-1">{{ guest.idNumber || '—' }}</p>
-                  } @else {
-                    <span class="text-gray-400">—</span>
-                  }
-                </td>
-                <td class="px-6 py-4 text-gray-500">{{ guest.nationality || '—' }}</td>
-                <td class="px-6 py-4 text-right">
-                  <div class="flex items-center justify-end gap-2 flex-wrap">
-                    <a
-                      [routerLink]="['/guests', guest._id]"
-                      class="text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                    >
-                      👤 Profile
-                    </a>
-                    @if (canManageGuests) {
-                      <a
-                        [routerLink]="['/guests/edit', guest._id]"
-                        class="text-xs bg-serenity-50 hover:bg-serenity-100 text-serenity-700 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                      >
-                        ✏️ Edit
-                      </a>
-                      @if (deleteConfirmId === guest._id) {
-                        <button (click)="deleteGuest(guest._id!)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg">Yes</button>
-                        <button (click)="cancelDelete()" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg">No</button>
-                      } @else {
-                        <button
-                          (click)="confirmDelete(guest._id!)"
-                          class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                        >
-                          🗑️
-                        </button>
-                      }
+    <div class="card overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-gray-500">
+            <th class="px-4 py-3">Guest</th>
+            <th class="px-4 py-3">Contact</th>
+            <th class="px-4 py-3">Tier</th>
+            <th class="px-4 py-3">Location</th>
+            <th class="px-4 py-3">Flags</th>
+            <th class="px-4 py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (guest of guests; track guest._id) {
+            <tr class="border-b border-gray-50 hover:bg-gray-50/80">
+              <td class="px-4 py-3">
+                <a [routerLink]="['/guests', guest._id]" class="font-medium text-gray-900 hover:text-serenity-700 hover:underline">
+                  {{ guest.firstName }} {{ guest.lastName }}
+                </a>
+                @if (guest.company?.name) {
+                  <p class="text-xs text-gray-400">{{ guest.company?.name }}</p>
+                }
+              </td>
+              <td class="px-4 py-3 text-gray-600">
+                <p>{{ guest.email }}</p>
+                <p class="text-xs">{{ guest.phone }}</p>
+              </td>
+              <td class="px-4 py-3"><span [class]="tierClass(guest.loyaltyTier)">{{ guest.loyaltyTier || 'Regular' }}</span></td>
+              <td class="px-4 py-3 text-gray-600">{{ location(guest) }}</td>
+              <td class="px-4 py-3">
+                @if (guest.isBlacklisted) { <span class="badge-danger text-xs">Blacklisted</span> }
+                @if (guest.isArchived) { <span class="badge-neutral text-xs ml-1">Archived</span> }
+                @if (guest.marketingOptIn) { <span class="badge-info text-xs ml-1">Marketing</span> }
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex flex-wrap gap-2">
+                  <a [routerLink]="['/guests', guest._id]" class="text-xs text-serenity-700 font-medium">Profile</a>
+                  @if (canManageGuests && !guest.isArchived) {
+                    <a [routerLink]="['/guests/edit', guest._id]" class="text-xs text-gray-600 font-medium">Edit</a>
+                    <a [routerLink]="['/bookings/new']" [queryParams]="{ guest: guest._id }" class="text-xs text-green-700 font-medium">Book</a>
+                    @if (deleteConfirmId === guest._id) {
+                      <button type="button" class="text-xs text-red-600 font-medium" (click)="deleteGuest(guest._id!)">Confirm archive</button>
+                      <button type="button" class="text-xs text-gray-500" (click)="cancelDelete()">Cancel</button>
+                    } @else {
+                      <button type="button" class="text-xs text-red-500 font-medium" (click)="confirmDelete(guest._id!)">Archive</button>
                     }
-                  </div>
-                </td>
-              </tr>
-            }
-
-            @if (filteredGuests.length === 0) {
-              <tr>
-                <td colspan="6" class="px-6 py-16 text-center text-gray-400">
-                  <p class="text-4xl mb-3">👥</p>
-                  <p class="font-medium text-gray-500">No guests found</p>
-                  <p class="text-sm mt-1 mb-4">
-                    {{ searchTerm ? 'Try a different search' : 'Register your first guest to get started' }}
-                  </p>
-                  @if (canManageGuests && !searchTerm) {
-                    <a routerLink="/guests/new" class="btn-primary">+ Register Guest</a>
                   }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+                  @if (canManageGuests && guest.isArchived) {
+                    <button type="button" class="text-xs text-green-700 font-medium" (click)="restoreGuest(guest)">Restore</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex items-center justify-between mt-4 text-sm text-gray-500">
+      <span>Page {{ page }} of {{ pages }} ({{ total }} total)</span>
+      <div class="flex gap-2">
+        <button type="button" class="btn-secondary text-sm" [disabled]="page <= 1" (click)="goPage(page - 1)">Prev</button>
+        <button type="button" class="btn-secondary text-sm" [disabled]="page >= pages" (click)="goPage(page + 1)">Next</button>
       </div>
     </div>
   }

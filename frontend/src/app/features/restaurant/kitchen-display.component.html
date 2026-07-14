@@ -1,0 +1,78 @@
+<div class="min-h-screen bg-slate-900 text-white p-4 md:p-6">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Kitchen Display</h1>
+      <p class="text-slate-400 text-sm">Updated {{ lastUpdated | date: 'HH:mm:ss' }} · auto-refresh 8s</p>
+    </div>
+    <div class="flex gap-2">
+      <button type="button" class="px-3 py-2 rounded-lg bg-slate-700 text-sm hover:bg-slate-600" (click)="load()">Refresh</button>
+      <a routerLink="/restaurant" class="px-3 py-2 rounded-lg bg-serenity-600 text-sm hover:bg-serenity-500">Back to Restaurant</a>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="mb-4 rounded-lg bg-red-900/50 text-red-200 px-4 py-3 text-sm">{{ error }}</div>
+  }
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    @for (col of columns; track col.status) {
+      <section class="rounded-xl bg-slate-800/80 border border-slate-700 min-h-[70vh]">
+        <header class="px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+          <h2 class="font-semibold text-lg">{{ col.title }}</h2>
+          <span class="text-sm text-slate-400">{{ ordersFor(col.status).length }}</span>
+        </header>
+        <div class="p-3 space-y-3">
+          @for (o of ordersFor(col.status); track o._id) {
+            <article
+              class="rounded-lg p-4 border"
+              [class]="waitMinutes(o) >= (o.estimatedPrepMinutes || 15)
+                ? 'bg-amber-950/40 border-amber-600/50'
+                : 'bg-slate-900/60 border-slate-600'"
+            >
+              <div class="flex justify-between gap-2 mb-2">
+                <p class="font-semibold">
+                  {{ o.orderType }}
+                  @if (o.tableNumber) { · T{{ o.tableNumber }} }
+                  @if (o.roomNumber) { · R{{ o.roomNumber }} }
+                </p>
+                <p class="text-xs text-slate-400">{{ waitMinutes(o) }}m / ~{{ o.estimatedPrepMinutes || 15 }}m</p>
+              </div>
+              @if (o.guestName) {
+                <p class="text-xs text-slate-400 mb-1">{{ o.guestName }}</p>
+              }
+              @if (o.guestAllergies) {
+                <p class="text-xs text-amber-300 mb-2">Allergies: {{ o.guestAllergies }}</p>
+              }
+              <ul class="space-y-1 mb-3">
+                @for (line of o.items; track $index) {
+                  <li class="text-sm">
+                    <span class="font-medium">{{ line.quantity }}× {{ line.name }}</span>
+                    @if (line.note) {
+                      <span class="block text-xs text-sky-300">{{ line.note }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+              <p class="text-xs text-slate-500 mb-2">{{ o.createdAt | date: 'HH:mm' }} @if (o.waiter) { · {{ o.waiter }} }</p>
+              @if (canManage) {
+                <div class="flex flex-wrap gap-2">
+                  @if (o.status === 'Pending') {
+                    <button type="button" class="text-xs px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500" (click)="setStatus(o, 'Preparing')">Start cooking</button>
+                  }
+                  @if (o.status === 'Preparing') {
+                    <button type="button" class="text-xs px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500" (click)="setStatus(o, 'Ready')">Mark ready</button>
+                  }
+                  @if (o.status === 'Ready') {
+                    <button type="button" class="text-xs px-3 py-1.5 rounded bg-serenity-600 hover:bg-serenity-500" (click)="setStatus(o, 'Served')">Served</button>
+                  }
+                </div>
+              }
+            </article>
+          } @empty {
+            <p class="text-sm text-slate-500 px-1 py-6 text-center">No tickets</p>
+          }
+        </div>
+      </section>
+    }
+  </div>
+</div>
