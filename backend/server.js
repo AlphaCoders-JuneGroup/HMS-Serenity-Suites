@@ -15,6 +15,8 @@ const roomTypeRoutes = require('./routes/roomTypeRoutes');
 const guestRoutes = require('./routes/guestRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const restaurantRoutes = require('./routes/restaurantRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const billingRoutes = require('./routes/billingRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -90,6 +92,8 @@ app.use('/api/room-types', roomTypeRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/restaurant', restaurantRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/billing', billingRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });

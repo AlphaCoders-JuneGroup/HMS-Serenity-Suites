@@ -251,10 +251,21 @@
         <div class="mt-4 pt-4 border-t border-gray-100">
           <p class="form-label mb-2">Services & Add-ons (decor, catering, AV equipment...)</p>
           <div class="grid grid-cols-12 gap-2 mb-2">
-            <input [(ngModel)]="newServiceName" placeholder="Service name" class="col-span-6 form-input" />
-            <input type="number" [(ngModel)]="newServicePrice" placeholder="Price" class="col-span-3 form-input" />
-            <input type="number" min="1" [(ngModel)]="newServiceQty" placeholder="Qty" class="col-span-2 form-input" />
-            <button type="button" class="col-span-1 btn-secondary text-xs" (click)="addFormService()">+</button>
+            <div class="col-span-6">
+              <label class="text-xs text-gray-500">Service name</label>
+              <input [(ngModel)]="newServiceName" placeholder="e.g. Flower Decoration" class="form-input" />
+            </div>
+            <div class="col-span-3">
+              <label class="text-xs text-gray-500">Price (LKR)</label>
+              <input type="number" min="0" [(ngModel)]="newServicePrice" class="form-input" />
+            </div>
+            <div class="col-span-2">
+              <label class="text-xs text-gray-500">Qty</label>
+              <input type="number" min="1" [(ngModel)]="newServiceQty" class="form-input" />
+            </div>
+            <div class="col-span-1 flex items-end">
+              <button type="button" class="btn-secondary text-xs w-full" (click)="addFormService()">+</button>
+            </div>
           </div>
           @if (formServices.length > 0) {
             <ul class="text-sm text-gray-600 space-y-1">
@@ -343,9 +354,18 @@
             <option value="Garden / Outdoor">Garden / Outdoor</option>
             <option value="Rooftop">Rooftop</option>
           </select>
-          <input type="number" [(ngModel)]="hallForm.capacity" placeholder="Capacity" class="form-input" />
-          <input type="number" [(ngModel)]="hallForm.ratePerHour" placeholder="Rate / hour (LKR)" class="form-input" />
-          <input type="number" [(ngModel)]="hallForm.ratePerDay" placeholder="Rate / day (LKR, optional)" class="form-input" />
+          <div>
+            <label class="text-xs text-gray-500">Capacity (guests)</label>
+            <input type="number" min="1" [(ngModel)]="hallForm.capacity" class="form-input" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">Rate / hour (LKR)</label>
+            <input type="number" min="0" [(ngModel)]="hallForm.ratePerHour" class="form-input" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">Rate / day (LKR, optional)</label>
+            <input type="number" min="0" [(ngModel)]="hallForm.ratePerDay" class="form-input" />
+          </div>
           <input [(ngModel)]="hallForm.description" placeholder="Description" class="form-input" />
           <div class="md:col-span-2 flex justify-end gap-2">
             @if (editingHall) {
