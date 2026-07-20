@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from './api.service';
 
@@ -184,6 +185,10 @@ export interface ReportSummary {
 export class BookingService {
   private baseUrl = environment.apiUrl;
 
+  // Reactive event bus for booking updates
+  private bookingUpdatedSource = new Subject<void>();
+  bookingUpdated$ = this.bookingUpdatedSource.asObservable();
+
   constructor(private http: HttpClient) {}
 
   getBookings(params?: BookingListParams | string): Observable<ApiResponse<Booking[]>> {
@@ -205,7 +210,9 @@ export class BookingService {
   }
 
   createBooking(payload: BookingPayload): Observable<ApiResponse<Booking>> {
-    return this.http.post<ApiResponse<Booking>>(`${this.baseUrl}/bookings`, payload);
+    return this.http.post<ApiResponse<Booking>>(`${this.baseUrl}/bookings`, payload).pipe(
+      tap(() => this.bookingUpdatedSource.next())
+    );
   }
 
   createGroupBooking(payload: {
@@ -222,27 +229,39 @@ export class BookingService {
     return this.http.post<{ success: boolean; groupId: string; count: number; data: Booking[] }>(
       `${this.baseUrl}/bookings/group`,
       payload
+    ).pipe(
+      tap(() => this.bookingUpdatedSource.next())
     );
   }
 
   updateBooking(id: string, payload: Partial<BookingPayload & { amountPaid?: number }>): Observable<ApiResponse<Booking>> {
-    return this.http.put<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}`, payload);
+    return this.http.put<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}`, payload).pipe(
+      tap(() => this.bookingUpdatedSource.next())
+    );
   }
 
   confirmBooking(id: string): Observable<ApiResponse<Booking>> {
-    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}/confirm`, {});
+    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}/confirm`, {}).pipe(
+      tap(() => this.bookingUpdatedSource.next())
+    );
   }
 
   cancelBooking(id: string): Observable<ApiResponse<Booking>> {
-    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}/cancel`, {});
+    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}/cancel`, {}).pipe(
+      tap(() => this.bookingUpdatedSource.next())
+    );
   }
 
   checkIn(id: string): Observable<ApiResponse<Booking>> {
-    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}/check-in`, {});
+    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}/check-in`, {}).pipe(
+      tap(() => this.bookingUpdatedSource.next())
+    );
   }
 
   checkOut(id: string): Observable<ApiResponse<Booking>> {
-    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}/check-out`, {});
+    return this.http.patch<ApiResponse<Booking>>(`${this.baseUrl}/bookings/${id}/check-out`, {}).pipe(
+      tap(() => this.bookingUpdatedSource.next())
+    );
   }
 
   deleteBooking(id: string): Observable<{ success: boolean; message: string }> {

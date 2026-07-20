@@ -69,22 +69,25 @@ export class BookingFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.bookingId = this.route.snapshot.paramMap.get('id');
-    this.isEditMode = !!this.bookingId;
-    this.buildForms();
-    this.loadGuests();
+    this.route.paramMap.subscribe(params => {
+      this.bookingId = params.get('id');
+      this.isEditMode = !!this.bookingId;
+      
+      this.buildForms();
+      this.loadGuests();
 
-    const preselectGuest = this.route.snapshot.queryParamMap.get('guest');
-    if (preselectGuest && !this.isEditMode) {
-      this.form.patchValue({ guest: preselectGuest });
-      this.loadGuestHistory(preselectGuest);
-    }
+      const preselectGuest = this.route.snapshot.queryParamMap.get('guest');
+      if (preselectGuest && !this.isEditMode) {
+        this.form.patchValue({ guest: preselectGuest });
+        this.loadGuestHistory(preselectGuest);
+      }
 
-    if (this.isEditMode) {
-      this.loadBooking();
-    } else {
-      this.loadingData = false;
-    }
+      if (this.isEditMode) {
+        this.loadBooking();
+      } else {
+        this.loadingData = false;
+      }
+    });
   }
 
   buildForms(): void {
