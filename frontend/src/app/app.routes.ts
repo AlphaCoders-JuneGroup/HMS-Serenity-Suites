@@ -12,6 +12,8 @@ import { BookingWaitlistComponent } from './features/bookings/booking-waitlist/b
 import { CheckInDeskComponent } from './features/check-in/check-in-desk.component';
 import { ReportsComponent } from './features/reports/reports.component';
 import { ModulePageComponent } from './features/module-page/module-page.component';
+import { EventsComponent } from './features/events/events.component';
+import { BillingComponent } from './features/billing/billing.component';
 import { RestaurantComponent } from './features/restaurant/restaurant.component';
 import { KitchenDisplayComponent } from './features/restaurant/kitchen-display.component';
 import { LoginComponent } from './features/auth/login/login.component';
@@ -127,13 +129,7 @@ export const routes: Routes = [
       {
         path: 'billing',
         canActivate: [roleGuard('Admin', 'Manager', 'Receptionist')],
-        component: ModulePageComponent,
-        data: {
-          title: 'Billing & Payment Management',
-          description: 'Handle invoices, payments, and guest folios',
-          icon: '💳',
-          moduleKey: 'billing',
-        },
+        component: BillingComponent,
       },
 
       // 7. Restaurant Management (Manager = view only)
@@ -159,13 +155,7 @@ export const routes: Routes = [
       {
         path: 'events',
         canActivate: [roleGuard('Admin', 'Manager', 'Event Coordinator')],
-        component: ModulePageComponent,
-        data: {
-          title: 'Event Management',
-          description: 'Plan and manage hotel events and conferences',
-          icon: '🎉',
-          moduleKey: 'events',
-        },
+        component: EventsComponent,
       },
 
       // 10. Reporting & Analytics

@@ -1,0 +1,243 @@
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Billing & Payment Management</h2>
+      <p class="text-gray-500 mt-1">Unified invoices, payment tracking, and revenue across the hotel</p>
+    </div>
+    <button type="button" class="btn-secondary text-sm no-print" (click)="refresh()">🔄 Refresh</button>
+  </div>
+
+  @if (error) {
+    <div class="card mb-5 flex items-center gap-3 bg-red-50 border-red-200 text-red-700 text-sm no-print">
+      <span>⚠️</span> {{ error }}
+      <button type="button" class="ml-auto text-xs underline" (click)="error = ''">Dismiss</button>
+    </div>
+  }
+  @if (success) {
+    <div class="card mb-5 flex items-center gap-3 bg-green-50 border-green-200 text-green-700 text-sm no-print">
+      <span>✅</span> {{ success }}
+      <button type="button" class="ml-auto text-xs underline" (click)="success = ''">Dismiss</button>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="empty-state text-gray-400 no-print"><p class="text-4xl mb-3">⏳</p><p>Loading billing data...</p></div>
+  } @else if (summary) {
+    <!-- Overall summary cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 no-print">
+      <div class="card">
+        <p class="text-sm text-gray-500">Total Revenue</p>
+        <p class="text-2xl font-bold text-gray-900">{{ summary.totalRevenue | currency: 'LKR':'symbol':'1.0-0' }}</p>
+      </div>
+      <div class="card">
+        <p class="text-sm text-gray-500">Collected</p>
+        <p class="text-2xl font-bold text-green-600">{{ summary.totalCollected | currency: 'LKR':'symbol':'1.0-0' }}</p>
+      </div>
+      <div class="card">
+        <p class="text-sm text-gray-500">Outstanding</p>
+        <p class="text-2xl font-bold text-amber-600">{{ summary.totalPending | currency: 'LKR':'symbol':'1.0-0' }}</p>
+      </div>
+      <div class="card">
+        <p class="text-sm text-gray-500">Pending Items</p>
+        <p class="text-2xl font-bold text-gray-900">{{ filteredPending.length }}</p>
+      </div>
+    </div>
+
+    <!-- Revenue breakdown by stream -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 no-print">
+      <div class="card">
+        <p class="text-sm font-semibold text-gray-700 mb-2">🛏️ Room Revenue</p>
+        <p class="text-xl font-bold text-gray-900">{{ summary.breakdown.room.revenue | currency: 'LKR':'symbol':'1.0-0' }}</p>
+        <p class="text-xs text-gray-400">Collected {{ summary.breakdown.room.collected | currency: 'LKR':'symbol':'1.0-0' }} · {{ summary.breakdown.room.pendingCount }} pending</p>
+      </div>
+      <div class="card">
+        <p class="text-sm font-semibold text-gray-700 mb-2">🍽️ Restaurant Revenue</p>
+        <p class="text-xl font-bold text-gray-900">{{ summary.breakdown.restaurant.revenue | currency: 'LKR':'symbol':'1.0-0' }}</p>
+        <p class="text-xs text-gray-400">Collected {{ summary.breakdown.restaurant.collected | currency: 'LKR':'symbol':'1.0-0' }} · {{ summary.breakdown.restaurant.pendingCount }} pending</p>
+      </div>
+      <div class="card">
+        <p class="text-sm font-semibold text-gray-700 mb-2">🎉 Event Revenue</p>
+        <p class="text-xl font-bold text-gray-900">{{ summary.breakdown.event.revenue | currency: 'LKR':'symbol':'1.0-0' }}</p>
+        <p class="text-xs text-gray-400">Collected {{ summary.breakdown.event.collected | currency: 'LKR':'symbol':'1.0-0' }} · {{ summary.breakdown.event.pendingCount }} pending</p>
+      </div>
+    </div>
+  }
+
+  <!-- Revenue report (date range) -->
+  @if (revenueReport) {
+    <div class="card mb-6 no-print">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+        <p class="text-sm font-semibold text-gray-700">📈 Revenue Report</p>
+        <div class="flex gap-2 items-center">
+          <input type="date" [(ngModel)]="reportFrom" class="px-2 py-1 rounded-lg border border-gray-200 text-xs" />
+          <span class="text-xs text-gray-400">to</span>
+          <input type="date" [(ngModel)]="reportTo" class="px-2 py-1 rounded-lg border border-gray-200 text-xs" />
+          <button type="button" class="btn-secondary text-xs" (click)="loadRevenueReport()">Apply</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div><p class="text-gray-400">Total</p><p class="font-bold text-gray-900">{{ revenueReport.totalRevenue | currency: 'LKR':'symbol':'1.0-0' }}</p></div>
+        <div><p class="text-gray-400">Rooms ({{ revenueReport.bookingCount }})</p><p class="font-bold text-gray-900">{{ revenueReport.roomRevenue | currency: 'LKR':'symbol':'1.0-0' }}</p></div>
+        <div><p class="text-gray-400">Restaurant ({{ revenueReport.restaurantOrderCount }})</p><p class="font-bold text-gray-900">{{ revenueReport.restaurantRevenue | currency: 'LKR':'symbol':'1.0-0' }}</p></div>
+        <div><p class="text-gray-400">Events ({{ revenueReport.eventCount }})</p><p class="font-bold text-gray-900">{{ revenueReport.eventRevenue | currency: 'LKR':'symbol':'1.0-0' }}</p></div>
+      </div>
+    </div>
+  }
+
+  <!-- Pending payments -->
+  <div class="card mb-4 no-print">
+    <div class="flex flex-col md:flex-row gap-3 md:items-center justify-between">
+      <p class="text-sm font-semibold text-gray-700">Pending & Partial Payments</p>
+      <div class="flex flex-wrap gap-2">
+        <input
+          [(ngModel)]="searchQ"
+          (keyup.enter)="applyFilters()"
+          placeholder="Search reference or customer..."
+          class="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+        />
+        <select [(ngModel)]="filterType" (change)="applyFilters()" class="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+          <option value="">All types</option>
+          <option value="Room Booking">Room Booking</option>
+          <option value="Event">Event</option>
+          <option value="Restaurant Order">Restaurant Order</option>
+        </select>
+        <button type="button" class="btn-secondary text-sm" (click)="resetFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  @if (!loading && filteredPending.length === 0) {
+    <div class="empty-state text-gray-400 no-print"><p class="text-4xl mb-3">🎉</p><p>No pending payments — all settled!</p></div>
+  } @else if (!loading) {
+    <div class="card overflow-x-auto no-print">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-gray-500 border-b border-gray-100">
+            <th class="py-2 pr-4">Type</th>
+            <th class="py-2 pr-4">Reference</th>
+            <th class="py-2 pr-4">Customer</th>
+            <th class="py-2 pr-4">Date</th>
+            <th class="py-2 pr-4">Total</th>
+            <th class="py-2 pr-4">Paid</th>
+            <th class="py-2 pr-4">Balance</th>
+            <th class="py-2 pr-4">Status</th>
+            <th class="py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of filteredPending; track p.id) {
+            <tr class="border-b border-gray-50">
+              <td class="py-2 pr-4">
+                @if (p.type === 'Room Booking') { <span class="badge-info">🛏️ Room</span> }
+                @if (p.type === 'Event') { <span class="badge-info">🎉 Event</span> }
+                @if (p.type === 'Restaurant Order') { <span class="badge-info">🍽️ F&amp;B</span> }
+              </td>
+              <td class="py-2 pr-4">{{ p.reference }}</td>
+              <td class="py-2 pr-4">{{ p.customerName }}</td>
+              <td class="py-2 pr-4 text-gray-500">{{ p.date | date: 'mediumDate' }}</td>
+              <td class="py-2 pr-4">{{ p.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}</td>
+              <td class="py-2 pr-4 text-green-600">{{ p.amountPaid | currency: 'LKR':'symbol':'1.0-0' }}</td>
+              <td class="py-2 pr-4 font-semibold text-amber-600">{{ p.balance | currency: 'LKR':'symbol':'1.0-0' }}</td>
+              <td class="py-2 pr-4">
+                <span
+                  class="badge"
+                  [class.badge-danger]="p.paymentStatus === 'Pending'"
+                  [class.badge-warning]="p.paymentStatus === 'Partial'"
+                >
+                  {{ p.paymentStatus }}
+                </span>
+              </td>
+              <td class="py-2 text-right">
+                @if (p.type !== 'Restaurant Order') {
+                  <button type="button" class="text-xs text-serenity-700 underline" (click)="viewInvoice(p)">View Invoice</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ═══════════ Invoice Modal ═══════════ -->
+  @if (showInvoice) {
+    <div class="modal-backdrop">
+      <div class="modal-panel max-w-2xl">
+        @if (invoiceLoading) {
+          <div class="text-center py-10 text-gray-400">
+            <p class="text-4xl mb-3">⏳</p><p>Loading invoice...</p>
+          </div>
+        } @else if (invoice) {
+          <div id="billing-invoice">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-gray-900">Serenity Suites — Invoice</h3>
+                <p class="text-xs text-gray-400">{{ invoice.invoiceNumber }} · Issued {{ invoice.issuedAt | date: 'medium' }}</p>
+              </div>
+              <span class="text-xs px-2 py-1 rounded-full bg-serenity-50 text-serenity-700">{{ invoice.invoiceType }}</span>
+            </div>
+
+            @if (invoice.booking) {
+              <p class="text-sm text-gray-600 mb-1">
+                Guest: <strong>{{ invoice.booking.guest?.firstName }} {{ invoice.booking.guest?.lastName }}</strong>
+                &nbsp;·&nbsp; Room {{ invoice.booking.room?.roomNumber }}
+              </p>
+              <table class="w-full text-sm my-3">
+                <tbody>
+                  <tr class="border-b border-gray-50"><td class="py-1">Room Charges</td><td class="py-1 text-right">{{ invoice.charges.roomCharges | currency: 'LKR':'symbol':'1.0-0' }}</td></tr>
+                  @if (invoice.charges.earlyCheckInFee) {
+                    <tr class="border-b border-gray-50"><td class="py-1">Early Check-in Fee</td><td class="py-1 text-right">{{ invoice.charges.earlyCheckInFee | currency: 'LKR':'symbol':'1.0-0' }}</td></tr>
+                  }
+                  @if (invoice.charges.lateCheckOutFee) {
+                    <tr class="border-b border-gray-50"><td class="py-1">Late Check-out Fee</td><td class="py-1 text-right">{{ invoice.charges.lateCheckOutFee | currency: 'LKR':'symbol':'1.0-0' }}</td></tr>
+                  }
+                  <tr class="border-b border-gray-50"><td class="py-1">Restaurant Charges</td><td class="py-1 text-right">{{ invoice.charges.restaurantTotal | currency: 'LKR':'symbol':'1.0-0' }}</td></tr>
+                </tbody>
+              </table>
+            }
+
+            @if (invoice.event) {
+              <p class="text-sm text-gray-600 mb-1">
+                Customer: <strong>{{ invoice.event.customerName }}</strong> &nbsp;·&nbsp; {{ invoice.event.hall?.name }}
+              </p>
+              <table class="w-full text-sm my-3">
+                <tbody>
+                  <tr class="border-b border-gray-50"><td class="py-1">Hall Charge</td><td class="py-1 text-right">{{ invoice.charges.hallCharge | currency: 'LKR':'symbol':'1.0-0' }}</td></tr>
+                  @for (s of invoice.charges.services; track s._id) {
+                    <tr class="border-b border-gray-50"><td class="py-1">{{ s.name }} × {{ s.quantity }}</td><td class="py-1 text-right">{{ s.price * s.quantity | currency: 'LKR':'symbol':'1.0-0' }}</td></tr>
+                  }
+                  @if (invoice.charges.discountPercent) {
+                    <tr class="border-b border-gray-50"><td class="py-1">Discount</td><td class="py-1 text-right">-{{ invoice.charges.discountPercent }}%</td></tr>
+                  }
+                  @if (invoice.charges.taxPercent) {
+                    <tr class="border-b border-gray-50"><td class="py-1">Tax</td><td class="py-1 text-right">{{ invoice.charges.taxPercent }}%</td></tr>
+                  }
+                </tbody>
+              </table>
+            }
+
+            <div class="border-t border-gray-200 pt-3 space-y-1 text-sm">
+              <div class="flex justify-between font-bold text-gray-900"><span>Grand Total</span><span>{{ invoice.grandTotal | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+              <div class="flex justify-between text-green-600"><span>Amount Paid</span><span>{{ invoice.amountPaid | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+              <div class="flex justify-between font-semibold text-amber-600"><span>Balance Due</span><span>{{ invoice.balance | currency: 'LKR':'symbol':'1.0-0' }}</span></div>
+            </div>
+
+            @if (invoice.payments?.length > 0) {
+              <div class="mt-4 pt-3 border-t border-gray-100">
+                <p class="text-xs font-semibold text-gray-500 mb-2">Payment History</p>
+                @for (pmt of invoice.payments; track pmt._id) {
+                  <p class="text-xs text-gray-500">{{ pmt.at | date: 'medium' }} — {{ pmt.method }} — {{ pmt.amount | currency: 'LKR':'symbol':'1.0-0' }}</p>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="mt-5 flex justify-end gap-2 no-print">
+            <button type="button" class="btn-secondary text-sm" (click)="closeInvoice()">Close</button>
+            <button type="button" class="btn-primary text-sm" (click)="printInvoice()">🖨️ Print</button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
