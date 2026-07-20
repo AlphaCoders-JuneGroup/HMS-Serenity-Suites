@@ -79,4 +79,15 @@ export class BillingService {
   getGuestMasterInvoice(guestId: string): Observable<ApiResponse<any>> {
     return this.http.get<ApiResponse<any>>(`${this.baseUrl}/invoice/guest/${guestId}`);
   }
+
+  /** Post a payment against a booking via the booking payments endpoint */
+  addPayment(
+    bookingId: string,
+    payload: { amount: number; method: string; note?: string; reference?: string }
+  ): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(
+      `${environment.apiUrl}/bookings/${bookingId}/payments`,
+      payload
+    );
+  }
 }

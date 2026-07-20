@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   Booking,
   BookingGuest,
@@ -61,7 +61,8 @@ export class CheckInDeskComponent implements OnInit, OnDestroy {
   constructor(
     private bookingService: BookingService,
     private auth: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
     this.walkInForm = this.fb.group({
       firstName: ['', [guestNameValidator()]],
@@ -142,12 +143,25 @@ export class CheckInDeskComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Returns the outstanding balance (>= 0) for a booking. */
+  balance(b: Booking): number {
+    return Math.max(0, (b.totalAmount || 0) - (b.amountPaid || 0));
+  }
+
   checkOut(b: Booking): void {
     if (!b._id || !this.canManage) return;
+
+    // If balance is not settled, redirect to Billing & Payments page
+    if (this.balance(b) > 0) {
+      this.error = 'Outstanding balance must be settled before check-out. Redirecting to Billing…';
+      this.router.navigate(['/billing']);
+      return;
+    }
+
     this.actionId = b._id;
     this.bookingService.checkOut(b._id).subscribe({
       next: () => {
-        this.success = 'Guest checked out.';
+        this.success = 'Guest checked out successfully.';
         this.actionId = '';
         this.loadDesk();
       },

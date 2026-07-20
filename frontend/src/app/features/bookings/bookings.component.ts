@@ -36,12 +36,6 @@ export class BookingsComponent implements OnInit {
   receiptBooking: Booking | null = null;
   showReceipt = false;
 
-  // Modals
-  paymentBooking: Booking | null = null;
-  paymentAmount = 0;
-  paymentMethod = 'Cash';
-  paymentNote = '';
-
   roomChangeBooking: Booking | null = null;
   newRoomId = '';
 
@@ -280,36 +274,6 @@ export class BookingsComponent implements OnInit {
         this.actionLoadingId = '';
       },
     });
-  }
-
-  openPayment(booking: Booking): void {
-    this.paymentBooking = booking;
-    this.paymentAmount = this.balance(booking) || 0;
-    this.paymentMethod = 'Cash';
-    this.paymentNote = '';
-  }
-
-  submitPayment(): void {
-    if (!this.paymentBooking?._id || this.paymentAmount <= 0) return;
-    this.actionLoadingId = this.paymentBooking._id;
-    this.bookingService
-      .addPayment(this.paymentBooking._id, {
-        amount: this.paymentAmount,
-        method: this.paymentMethod,
-        note: this.paymentNote,
-      })
-      .subscribe({
-        next: (res) => {
-          this.replaceBooking(res.data);
-          this.success = 'Payment recorded.';
-          this.paymentBooking = null;
-          this.actionLoadingId = '';
-        },
-        error: (err) => {
-          this.error = err.error?.message || 'Failed to record payment';
-          this.actionLoadingId = '';
-        },
-      });
   }
 
   openRoomChange(booking: Booking): void {
