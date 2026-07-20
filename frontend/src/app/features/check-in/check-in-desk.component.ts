@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -15,14 +15,31 @@ import {
   sriLankanPhoneValidator,
 } from '../../core/validators/guest-field.validators';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Subscription, timer } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-check-in-desk',
   standalone: true,
   imports: [CurrencyPipe, DatePipe, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './check-in-desk.component.html',
+  styles: [`
+    .leaving-today {
+      background-color: #ffedd5;
+      color: #c2410c;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      border: 1px solid #fdba74;
+      display: inline-block;
+      vertical-align: middle;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  `]
 })
-export class CheckInDeskComponent implements OnInit {
+export class CheckInDeskComponent implements OnInit, OnDestroy {
   arrivals: Booking[] = [];
   departures: Booking[] = [];
   inHouse: Booking[] = [];
@@ -37,6 +54,9 @@ export class CheckInDeskComponent implements OnInit {
   walkInRoomId = '';
   walkInForm!: FormGroup;
   useNewGuest = false;
+  
+  private pollingSub?: Subscription;
+  private updateSub?: Subscription;
 
   constructor(
     private bookingService: BookingService,
@@ -58,10 +78,25 @@ export class CheckInDeskComponent implements OnInit {
   ngOnInit(): void {
     this.loadDesk();
     this.bookingService.getGuests().subscribe({ next: (r) => (this.guests = r.data ?? []) });
+
+    // Reactively refresh when a booking is modified anywhere in this browser window
+    this.updateSub = this.bookingService.bookingUpdated$.subscribe(() => {
+      this.loadDesk();
+    });
+
+    // Poll every 15 seconds to ensure multi-user/multi-tab synchronization
+    this.pollingSub = timer(15000, 15000).subscribe(() => {
+      this.loadDesk(false); // pass false to avoid showing the loading spinner overlay
+    });
   }
 
-  loadDesk(): void {
-    this.loading = true;
+  ngOnDestroy(): void {
+    this.pollingSub?.unsubscribe();
+    this.updateSub?.unsubscribe();
+  }
+
+  loadDesk(showLoading = true): void {
+    if (showLoading) this.loading = true;
     this.bookingService.getDeskToday().subscribe({
       next: (res) => {
         this.arrivals = res.data.arrivals ?? [];
@@ -165,5 +200,16 @@ export class CheckInDeskComponent implements OnInit {
         this.error = err.error?.message || 'Walk-in failed';
       },
     });
+  }
+
+  isLeavingToday(checkOutDate: string | Date): boolean {
+    if (!checkOutDate) return false;
+    const checkout = new Date(checkOutDate);
+    const today = new Date();
+    return (
+      checkout.getDate() === today.getDate() &&
+      checkout.getMonth() === today.getMonth() &&
+      checkout.getFullYear() === today.getFullYear()
+    );
   }
 }
