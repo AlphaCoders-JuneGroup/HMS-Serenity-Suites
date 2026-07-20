@@ -103,8 +103,6 @@ export class BookingFormComponent implements OnInit {
       checkOutTime: [this.defaultCheckOutTime, Validators.required],
       numberOfGuests: [1, [Validators.required, Validators.min(1)]],
       specialRequests: [''],
-      paymentStatus: ['Pending'],
-      status: ['Pending'],
       discountPercent: [0, [Validators.min(0), Validators.max(100)]],
       promoCode: [''],
     });
@@ -183,8 +181,6 @@ export class BookingFormComponent implements OnInit {
           checkOutTime: this.toTimeInput(new Date(b.checkOut)),
           numberOfGuests: b.numberOfGuests || 1,
           specialRequests: b.specialRequests || '',
-          paymentStatus: b.paymentStatus,
-          status: b.status,
           discountPercent: b.discountPercent || 0,
           promoCode: b.promoCode || '',
         });
@@ -445,7 +441,6 @@ export class BookingFormComponent implements OnInit {
           specialRequests: v.specialRequests,
           discountPercent: v.discountPercent || 0,
           promoCode: v.promoCode || '',
-          status: v.status,
         })
         .subscribe({
           next: (res) => {
@@ -474,8 +469,6 @@ export class BookingFormComponent implements OnInit {
       checkOut: checkOutAt,
       numberOfGuests: v.numberOfGuests,
       specialRequests: v.specialRequests,
-      paymentStatus: v.paymentStatus,
-      status: v.status,
       discountPercent: v.discountPercent || 0,
       promoCode: v.promoCode || '',
       totalAmount: this.estimatedTotal || undefined,

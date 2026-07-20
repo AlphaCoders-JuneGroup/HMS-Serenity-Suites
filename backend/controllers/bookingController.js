@@ -892,6 +892,18 @@ exports.checkOutBooking = async (req, res) => {
         message: 'Only checked-in guests can be checked out.',
       });
     }
+
+    // ── Issue #15 / #18: Billing-before-checkout gate ──────────────────────
+    const outstanding = (booking.totalAmount || 0) - (booking.amountPaid || 0);
+    if (outstanding > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot check out. Outstanding balance must be settled first.',
+        balance: outstanding,
+      });
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     booking.status = 'Checked-Out';
     await booking.save();
     await Room.findByIdAndUpdate(booking.room, { status: 'Cleaning' });

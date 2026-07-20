@@ -391,6 +391,20 @@ exports.createOrder = async (req, res) => {
 
     await adjustStock(normalized, -1);
 
+    // ── Issue: Integrate restaurant charge into booking folio ─────────────────
+    if (bookingId) {
+      const {
+        derivePaymentStatus,
+      } = require('../utils/bookingBilling');
+      const linkedBooking = await Booking.findById(bookingId);
+      if (linkedBooking) {
+        linkedBooking.totalAmount = (linkedBooking.totalAmount || 0) + (totals.grandTotal || totals.totalAmount || 0);
+        linkedBooking.paymentStatus = derivePaymentStatus(linkedBooking.totalAmount, linkedBooking.amountPaid);
+        await linkedBooking.save();
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
     if (tableDoc) {
       tableDoc.status = 'Occupied';
       tableDoc.currentOrder = order._id;

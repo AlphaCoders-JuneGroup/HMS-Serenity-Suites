@@ -36,6 +36,13 @@ export class BillingComponent implements OnInit {
   invoiceLoading = false;
   showInvoice = false;
 
+  // Payment modal
+  paymentItem: PendingPaymentItem | null = null;
+  payAmount = 0;
+  payMethod = 'Cash';
+  payReference = '';
+  paySubmitting = false;
+
   constructor(private billingService: BillingService) {}
 
   ngOnInit(): void {
@@ -142,5 +149,57 @@ export class BillingComponent implements OnInit {
 
   printInvoice(): void {
     window.print();
+  }
+
+  // ── Payment modal ──────────────────────────────────────────────────────────
+  openPayment(item: PendingPaymentItem): void {
+    this.paymentItem = item;
+    this.payAmount = item.balance > 0 ? item.balance : item.totalAmount;
+    this.payMethod = 'Cash';
+    this.payReference = '';
+    this.error = '';
+    this.success = '';
+  }
+
+  closePayment(): void {
+    this.paymentItem = null;
+    this.paySubmitting = false;
+  }
+
+  submitPayment(): void {
+    if (!this.paymentItem || this.payAmount <= 0) return;
+
+    if (this.payMethod === 'Card' && !this.payReference.trim()) {
+      this.error = 'Please enter the card / transaction reference.';
+      return;
+    }
+
+    if (this.paymentItem.type !== 'Room Booking') {
+      this.error = 'Direct payment for this type is not yet supported. Use the relevant module.';
+      return;
+    }
+
+    this.paySubmitting = true;
+    this.error = '';
+
+    this.billingService
+      .addPayment(this.paymentItem.id, {
+        amount: this.payAmount,
+        method: this.payMethod,
+        note: this.payReference.trim() || undefined,
+        reference: this.payReference.trim() || undefined,
+      })
+      .subscribe({
+        next: () => {
+          this.success = '✅ Payment Successful! The folio has been updated.';
+          this.paySubmitting = false;
+          this.closePayment();
+          this.loadAll();
+        },
+        error: (err) => {
+          this.error = err.error?.message || 'Payment failed. Please try again.';
+          this.paySubmitting = false;
+        },
+      });
   }
 }

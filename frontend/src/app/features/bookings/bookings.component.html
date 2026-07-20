@@ -147,7 +147,6 @@
               <button type="button" (click)="confirm(booking)" [disabled]="actionLoadingId === booking._id" class="text-xs bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-medium">✅ Confirm</button>
             }
             @if (canMarkPaid(booking)) {
-              <button type="button" (click)="openPayment(booking)" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg font-medium">💳 Payment</button>
               <button type="button" (click)="markPaidAndGenerateReceipt(booking)" [disabled]="actionLoadingId === booking._id" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg font-medium">Full Pay & Receipt</button>
             }
             @if (canManageBookings && canEdit(booking)) {
@@ -179,26 +178,6 @@
   }
 </div>
 
-<!-- Payment modal -->
-@if (paymentBooking) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 no-print">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-5">
-      <h3 class="font-semibold text-gray-900 mb-3">Record Payment — {{ guestName(paymentBooking) }}</h3>
-      <p class="text-sm text-gray-500 mb-3">Balance: {{ balance(paymentBooking) | currency: 'LKR':'symbol':'1.0-0' }}</p>
-      <label class="block text-sm text-gray-600 mb-1">Amount</label>
-      <input type="number" min="1" [(ngModel)]="paymentAmount" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm mb-3" />
-      <label class="block text-sm text-gray-600 mb-1">Method</label>
-      <select [(ngModel)]="paymentMethod" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm mb-3 bg-white">
-        <option>Cash</option><option>Card</option><option>Transfer</option><option>Other</option>
-      </select>
-      <input [(ngModel)]="paymentNote" placeholder="Note (optional)" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm mb-4" />
-      <div class="flex gap-2 justify-end">
-        <button type="button" class="btn-secondary text-sm" (click)="paymentBooking = null">Close</button>
-        <button type="button" class="btn-primary text-sm" (click)="submitPayment()">Save Payment</button>
-      </div>
-    </div>
-  </div>
-}
 
 <!-- Room change modal -->
 @if (roomChangeBooking) {
