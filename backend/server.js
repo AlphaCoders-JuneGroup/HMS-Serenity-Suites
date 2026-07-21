@@ -94,6 +94,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/reports', require('./routes/reportsRoutes'));
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
