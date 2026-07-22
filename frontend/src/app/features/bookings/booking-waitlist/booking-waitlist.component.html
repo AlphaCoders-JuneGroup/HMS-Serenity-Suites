@@ -1,0 +1,72 @@
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Waitlist</h2>
+      <p class="text-gray-500 mt-1">Guests waiting for preferred rooms</p>
+    </div>
+    <div class="flex gap-2">
+      <a routerLink="/bookings" class="btn-secondary text-sm">← Bookings</a>
+      @if (canManage) {
+        <button type="button" class="btn-primary text-sm" (click)="showForm = !showForm">
+          {{ showForm ? 'Cancel' : '+ Add' }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="card mb-4 bg-red-50 text-red-700 text-sm">{{ error }}</div>
+  }
+  @if (success) {
+    <div class="card mb-4 bg-green-50 text-green-700 text-sm">{{ success }}</div>
+  }
+
+  @if (showForm) {
+    <div class="card mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <select [(ngModel)]="form.guest" class="px-3 py-2 rounded-lg border text-sm bg-white">
+        <option value="">Select guest</option>
+        @for (g of guests; track g._id) {
+          <option [value]="g._id">{{ g.firstName }} {{ g.lastName }}</option>
+        }
+      </select>
+      <select [(ngModel)]="form.preferredType" class="px-3 py-2 rounded-lg border text-sm bg-white">
+        @for (t of roomTypes; track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+      <input type="datetime-local" [(ngModel)]="form.checkIn" class="px-3 py-2 rounded-lg border text-sm" />
+      <input type="datetime-local" [(ngModel)]="form.checkOut" class="px-3 py-2 rounded-lg border text-sm" />
+      <input type="number" min="1" [(ngModel)]="form.numberOfGuests" class="px-3 py-2 rounded-lg border text-sm" placeholder="Guests" />
+      <input [(ngModel)]="form.notes" class="px-3 py-2 rounded-lg border text-sm" placeholder="Notes" />
+      <button type="button" class="btn-primary text-sm sm:col-span-2" (click)="create()">Save to waitlist</button>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="empty-state text-gray-400">Loading...</div>
+  } @else if (items.length === 0) {
+    <div class="empty-state text-gray-400">Waitlist is empty.</div>
+  } @else {
+    <div class="space-y-3">
+      @for (item of items; track item._id) {
+        <div class="card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p class="font-semibold text-gray-900">{{ guestName(item) }}</p>
+            <p class="text-sm text-gray-500">
+              {{ item.preferredType }} · {{ item.checkIn | date: 'dd MMM yyyy HH:mm' }} →
+              {{ item.checkOut | date: 'dd MMM yyyy HH:mm' }}
+            </p>
+            <span class="text-xs badge-warning">{{ item.status }}</span>
+          </div>
+          @if (canManage) {
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="text-xs btn-secondary" (click)="setStatus(item, 'Notified')">Notify</button>
+              <button type="button" class="text-xs btn-primary" (click)="setStatus(item, 'Booked')">Booked</button>
+              <button type="button" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg" (click)="remove(item)">Remove</button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,79 @@
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Booking Calendar</h2>
+      <p class="text-gray-500 mt-1">Room occupancy timeline</p>
+    </div>
+    <a routerLink="/bookings" class="btn-secondary text-sm">← Bookings</a>
+  </div>
+
+  <div class="card mb-4 flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs text-gray-500 mb-1">From</label>
+      <input type="date" [(ngModel)]="from" class="px-3 py-2 rounded-lg border text-sm" />
+    </div>
+    <div>
+      <label class="block text-xs text-gray-500 mb-1">To</label>
+      <input type="date" [(ngModel)]="to" class="px-3 py-2 rounded-lg border text-sm" />
+    </div>
+    <button type="button" class="btn-primary text-sm" (click)="load()">Load</button>
+  </div>
+
+  @if (error) {
+    <div class="card mb-4 bg-red-50 text-red-700 text-sm">{{ error }}</div>
+  }
+
+  @if (loading) {
+    <div class="empty-state text-gray-400">Loading calendar...</div>
+  } @else {
+    <div class="card overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b">
+            <th class="text-left py-2 px-3 sticky left-0 bg-white">Room</th>
+            @for (d of days; track d) {
+              <th class="text-center py-2 px-2 font-medium text-gray-600 whitespace-nowrap">
+                {{ d | date: 'EEE dd' }}
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (room of rooms; track room._id) {
+            <tr class="border-b border-gray-50">
+              <td class="py-2 px-3 sticky left-0 bg-white font-medium whitespace-nowrap">
+                {{ room.roomNumber }}
+                <span class="text-xs text-gray-400">{{ room.type }}</span>
+              </td>
+              @for (d of days; track d) {
+                <td class="py-1 px-1 text-center">
+                  @if (isOccupied(room._id, d); as b) {
+                    <div
+                      class="rounded px-1 py-2 text-[10px] leading-tight truncate"
+                      [class.bg-green-100]="b.status === 'Checked-In'"
+                      [class.text-green-800]="b.status === 'Checked-In'"
+                      [class.bg-blue-100]="b.status === 'Confirmed'"
+                      [class.text-blue-800]="b.status === 'Confirmed'"
+                      [class.bg-amber-100]="b.status === 'Pending'"
+                      [class.text-amber-800]="b.status === 'Pending'"
+                      [class.bg-gray-100]="b.status === 'Checked-Out'"
+                      [title]="guestLabel(b) + ' · ' + b.status"
+                    >
+                      @if (guestId(b); as gid) {
+                        <a [routerLink]="['/guests', gid]" class="hover:underline">{{ guestLabel(b) }}</a>
+                      } @else {
+                        {{ guestLabel(b) }}
+                      }
+                    </div>
+                  } @else {
+                    <div class="h-8 rounded bg-gray-50"></div>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

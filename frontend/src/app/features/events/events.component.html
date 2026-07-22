@@ -1,0 +1,400 @@
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Event / Banquet Management</h2>
+      <p class="text-gray-500 mt-1">Book halls, manage event details, and track event payments</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      @if (canManageHalls) {
+        <button type="button" class="btn-secondary text-sm" (click)="openHallManager()">🏛️ Manage Halls</button>
+      }
+      @if (canManageEvents) {
+        <button type="button" class="btn-primary text-sm" (click)="openCreateForm()">+ New Event</button>
+      }
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="card mb-5 flex items-center gap-3 bg-red-50 border-red-200 text-red-700 text-sm">
+      <span>⚠️</span> {{ error }}
+      <button type="button" class="ml-auto text-xs underline" (click)="error = ''">Dismiss</button>
+    </div>
+  }
+  @if (success) {
+    <div class="card mb-5 flex items-center gap-3 bg-green-50 border-green-200 text-green-700 text-sm">
+      <span>✅</span> {{ success }}
+      <button type="button" class="ml-auto text-xs underline" (click)="success = ''">Dismiss</button>
+    </div>
+  }
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="card"><p class="text-sm text-gray-500">Upcoming Events</p><p class="text-2xl font-bold text-gray-900">{{ upcomingCount }}</p></div>
+    <div class="card"><p class="text-sm text-gray-500">Confirmed / Ongoing</p><p class="text-2xl font-bold text-gray-900">{{ confirmedCount }}</p></div>
+    <div class="card"><p class="text-sm text-gray-500">Halls Available</p><p class="text-2xl font-bold text-gray-900">{{ halls.length }}</p></div>
+    <div class="card">
+      <p class="text-sm text-gray-500">Event Revenue</p>
+      <p class="text-2xl font-bold text-gray-900">{{ totalRevenue | currency: 'LKR':'symbol':'1.0-0' }}</p>
+      <p class="text-xs text-gray-400">{{ pendingPaymentCount }} pending payments</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+      <input
+        [(ngModel)]="searchQ"
+        (keyup.enter)="search()"
+        placeholder="Search title, customer, phone, hall..."
+        class="lg:col-span-2 px-3 py-2 rounded-lg border border-gray-200 text-sm"
+      />
+      <select [(ngModel)]="filterStatus" (change)="applyFilters()" class="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+      <select [(ngModel)]="filterEventType" (change)="applyFilters()" class="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+        <option value="">All event types</option>
+        @for (t of eventTypes; track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+      <input type="date" [(ngModel)]="filterFrom" (change)="applyFilters()" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+      <input type="date" [(ngModel)]="filterTo" (change)="applyFilters()" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+    </div>
+    <div class="mt-3 flex gap-2">
+      <button type="button" class="btn-primary text-sm" (click)="search()">Search</button>
+      <button type="button" class="btn-secondary text-sm" (click)="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Event list -->
+  @if (loading) {
+    <div class="empty-state text-gray-400"><p class="text-4xl mb-3">⏳</p><p>Loading events...</p></div>
+  } @else if (filteredEvents.length === 0) {
+    <div class="empty-state text-gray-400"><p class="text-4xl mb-3">🎉</p><p>No events found</p></div>
+  } @else {
+    <div class="grid grid-cols-1 gap-4">
+      @for (e of filteredEvents; track e._id) {
+        <div class="card">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="text-lg font-semibold text-gray-900">{{ e.eventTitle }}</h3>
+                <span class="text-xs px-2 py-1 rounded-full bg-serenity-50 text-serenity-700">{{ e.eventType }}</span>
+                <span
+                  class="text-xs px-2 py-1 rounded-full"
+                  [class.bg-amber-50]="e.status === 'Inquiry'"
+                  [class.text-amber-600]="e.status === 'Inquiry'"
+                  [class.bg-green-50]="e.status === 'Confirmed' || e.status === 'Ongoing'"
+                  [class.text-green-600]="e.status === 'Confirmed' || e.status === 'Ongoing'"
+                  [class.bg-gray-100]="e.status === 'Completed'"
+                  [class.text-gray-600]="e.status === 'Completed'"
+                  [class.bg-red-50]="e.status === 'Cancelled'"
+                  [class.text-red-600]="e.status === 'Cancelled'"
+                >
+                  {{ e.status }}
+                </span>
+                <span
+                  class="text-xs px-2 py-1 rounded-full"
+                  [class.bg-red-50]="e.paymentStatus === 'Pending'"
+                  [class.text-red-600]="e.paymentStatus === 'Pending'"
+                  [class.bg-amber-50]="e.paymentStatus === 'Partial'"
+                  [class.text-amber-600]="e.paymentStatus === 'Partial'"
+                  [class.bg-green-50]="e.paymentStatus === 'Paid'"
+                  [class.text-green-600]="e.paymentStatus === 'Paid'"
+                >
+                  💳 {{ e.paymentStatus }}
+                </span>
+              </div>
+              <p class="text-sm text-gray-500 mt-1">
+                🏛️ {{ hallName(e) }} &nbsp;·&nbsp; 📅 {{ e.eventDate | date: 'mediumDate' }} &nbsp;·&nbsp; ⏰ {{ e.startTime }}–{{ e.endTime }}
+              </p>
+              <p class="text-sm text-gray-500">
+                👤 {{ e.customerName }} &nbsp;·&nbsp; 📞 {{ e.customerPhone }} &nbsp;·&nbsp; 👥 {{ e.expectedGuests }} guests
+              </p>
+            </div>
+
+            <div class="text-right">
+              <p class="text-xl font-bold text-gray-900">{{ e.totalAmount | currency: 'LKR':'symbol':'1.0-0' }}</p>
+              <p class="text-xs text-gray-400">Paid {{ e.amountPaid | currency: 'LKR':'symbol':'1.0-0' }} · Balance {{ balanceOf(e) | currency: 'LKR':'symbol':'1.0-0' }}</p>
+            </div>
+          </div>
+
+          @if (canManageEvents) {
+            <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+              @if (e.status === 'Inquiry') {
+                <button type="button" class="btn-secondary text-xs" (click)="confirmEvent(e)">✅ Confirm</button>
+                <button type="button" class="btn-secondary text-xs" (click)="openEditForm(e)">✏️ Edit</button>
+              }
+              @if (e.status === 'Confirmed') {
+                <button type="button" class="btn-secondary text-xs" (click)="startEvent(e)">▶️ Start</button>
+                <button type="button" class="btn-secondary text-xs" (click)="openEditForm(e)">✏️ Edit</button>
+              }
+              @if (e.status === 'Ongoing') {
+                <button type="button" class="btn-secondary text-xs" (click)="completeEvent(e)">🏁 Complete</button>
+              }
+              @if (balanceOf(e) > 0 && e.status !== 'Cancelled') {
+                <button type="button" class="btn-primary text-xs" (click)="openPaymentModal(e)">💰 Record Payment</button>
+              }
+              @if (e.status !== 'Completed' && e.status !== 'Cancelled') {
+                <button type="button" class="btn-secondary text-xs text-red-600" (click)="openCancelModal(e)">✖️ Cancel</button>
+              }
+              @if (e.status === 'Inquiry') {
+                <button type="button" class="btn-secondary text-xs text-red-600 ml-auto" (click)="deleteEvent(e)">🗑️ Delete</button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══════════ Create / Edit Event Modal ═══════════ -->
+  @if (showForm) {
+    <div class="modal-backdrop">
+      <div class="modal-panel max-w-2xl">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">{{ editingEvent ? 'Edit Event' : 'New Event' }}</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="md:col-span-2">
+            <label class="form-label">Event Title *</label>
+            <input [(ngModel)]="form.eventTitle" class="form-input" placeholder="e.g. Silva Wedding Reception" />
+          </div>
+
+          <div>
+            <label class="form-label">Event Type</label>
+            <select [(ngModel)]="form.eventType" class="form-input">
+              @for (t of eventTypes; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Expected Guests</label>
+            <input type="number" min="1" [(ngModel)]="form.expectedGuests" class="form-input" />
+          </div>
+
+          <div>
+            <label class="form-label">Event Date *</label>
+            <input type="date" [(ngModel)]="form.eventDate" (change)="checkAvailability()" class="form-input" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="form-label">Start Time *</label>
+              <input type="time" [(ngModel)]="form.startTime" (change)="checkAvailability()" class="form-input" />
+            </div>
+            <div>
+              <label class="form-label">End Time *</label>
+              <input type="time" [(ngModel)]="form.endTime" (change)="checkAvailability()" class="form-input" />
+            </div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="form-label">
+              Hall / Venue *
+              @if (checkingAvailability) {
+                <span class="text-xs text-gray-400">(checking availability...)</span>
+              }
+            </label>
+            <select [(ngModel)]="form.hall" class="form-input">
+              <option value="">Select a hall</option>
+              @for (h of halls; track h._id) {
+                <option [value]="h._id">
+                  {{ h.name }} — {{ h.type }} (Cap: {{ h.capacity }}, LKR {{ h.ratePerHour }}/hr)
+                </option>
+              }
+            </select>
+            @if (availableHallsForSlot.length > 0) {
+              <p class="text-xs text-green-600 mt-1">
+                ✅ {{ availableHallsForSlot.length }} hall(s) free at this time
+              </p>
+            }
+          </div>
+
+          <div>
+            <label class="form-label">Customer Name *</label>
+            <input [(ngModel)]="form.customerName" class="form-input" placeholder="Full name" />
+          </div>
+          <div>
+            <label class="form-label">Customer Phone *</label>
+            <input [(ngModel)]="form.customerPhone" class="form-input" placeholder="07XXXXXXXX" />
+          </div>
+          <div>
+            <label class="form-label">Customer Email</label>
+            <input [(ngModel)]="form.customerEmail" class="form-input" placeholder="optional" />
+          </div>
+          <div>
+            <label class="form-label">Organization</label>
+            <input [(ngModel)]="form.organization" class="form-input" placeholder="optional" />
+          </div>
+
+          <div>
+            <label class="form-label">Discount %</label>
+            <input type="number" min="0" max="100" [(ngModel)]="form.discountPercent" class="form-input" />
+          </div>
+          <div>
+            <label class="form-label">Tax %</label>
+            <input type="number" min="0" max="100" [(ngModel)]="form.taxPercent" class="form-input" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="form-label">Special Requests</label>
+            <textarea [(ngModel)]="form.specialRequests" class="form-input" rows="2"></textarea>
+          </div>
+        </div>
+
+        <!-- Services / add-ons -->
+        <div class="mt-4 pt-4 border-t border-gray-100">
+          <p class="form-label mb-2">Services & Add-ons (decor, catering, AV equipment...)</p>
+          <div class="grid grid-cols-12 gap-2 mb-2">
+            <div class="col-span-6">
+              <label class="text-xs text-gray-500">Service name</label>
+              <input [(ngModel)]="newServiceName" placeholder="e.g. Flower Decoration" class="form-input" />
+            </div>
+            <div class="col-span-3">
+              <label class="text-xs text-gray-500">Price (LKR)</label>
+              <input type="number" min="0" [(ngModel)]="newServicePrice" class="form-input" />
+            </div>
+            <div class="col-span-2">
+              <label class="text-xs text-gray-500">Qty</label>
+              <input type="number" min="1" [(ngModel)]="newServiceQty" class="form-input" />
+            </div>
+            <div class="col-span-1 flex items-end">
+              <button type="button" class="btn-secondary text-xs w-full" (click)="addFormService()">+</button>
+            </div>
+          </div>
+          @if (formServices.length > 0) {
+            <ul class="text-sm text-gray-600 space-y-1">
+              @for (s of formServices; track s.name; let i = $index) {
+                <li class="flex justify-between items-center">
+                  <span>{{ s.name }} × {{ s.quantity }}</span>
+                  <span class="flex items-center gap-2">
+                    {{ s.price * s.quantity | currency: 'LKR':'symbol':'1.0-0' }}
+                    <button type="button" class="text-red-500 text-xs" (click)="removeFormService(i)">✖</button>
+                  </span>
+                </li>
+              }
+            </ul>
+            <p class="text-right text-sm font-semibold mt-2">Services Total: {{ formServicesTotal | currency: 'LKR':'symbol':'1.0-0' }}</p>
+          }
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2">
+          <button type="button" class="btn-secondary text-sm" (click)="closeForm()">Cancel</button>
+          <button type="button" class="btn-primary text-sm" (click)="saveEvent()">{{ editingEvent ? 'Save Changes' : 'Create Event' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════ Payment Modal ═══════════ -->
+  @if (paymentEvent) {
+    <div class="modal-backdrop">
+      <div class="modal-panel max-w-md">
+        <h3 class="text-lg font-bold text-gray-900 mb-1">Record Payment</h3>
+        <p class="text-sm text-gray-500 mb-4">{{ paymentEvent.eventTitle }} — Balance: {{ balanceOf(paymentEvent) | currency: 'LKR':'symbol':'1.0-0' }}</p>
+
+        <label class="form-label">Amount</label>
+        <input type="number" [(ngModel)]="paymentAmount" class="form-input mb-3" />
+
+        <label class="form-label">Method</label>
+        <select [(ngModel)]="paymentMethod" class="form-input mb-3">
+          <option value="Cash">Cash</option>
+          <option value="Card">Card</option>
+          <option value="Transfer">Bank Transfer</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <label class="form-label">Note</label>
+        <input [(ngModel)]="paymentNote" class="form-input mb-4" placeholder="optional" />
+
+        <div class="flex justify-end gap-2">
+          <button type="button" class="btn-secondary text-sm" (click)="paymentEvent = null">Cancel</button>
+          <button type="button" class="btn-primary text-sm" (click)="submitPayment()">Record Payment</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════ Cancel Modal ═══════════ -->
+  @if (cancelEventTarget) {
+    <div class="modal-backdrop">
+      <div class="modal-panel max-w-md">
+        <h3 class="text-lg font-bold text-gray-900 mb-1">Cancel Event</h3>
+        <p class="text-sm text-gray-500 mb-4">{{ cancelEventTarget.eventTitle }}</p>
+        <label class="form-label">Reason</label>
+        <textarea [(ngModel)]="cancelReason" class="form-input mb-4" rows="3" placeholder="Why is this event being cancelled?"></textarea>
+        <div class="flex justify-end gap-2">
+          <button type="button" class="btn-secondary text-sm" (click)="cancelEventTarget = null">Back</button>
+          <button type="button" class="btn-primary text-sm text-red-600" (click)="confirmCancel()">Confirm Cancellation</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════ Hall Manager Modal ═══════════ -->
+  @if (showHallManager) {
+    <div class="modal-backdrop">
+      <div class="modal-panel max-w-2xl">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-gray-900">Manage Halls & Meeting Rooms</h3>
+          <button type="button" class="text-gray-400 text-sm" (click)="showHallManager = false">✖ Close</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 p-4 bg-gray-50 rounded-lg">
+          <input [(ngModel)]="hallForm.name" placeholder="Hall name" class="form-input" />
+          <select [(ngModel)]="hallForm.type" class="form-input">
+            <option value="Banquet Hall">Banquet Hall</option>
+            <option value="Conference Room">Conference Room</option>
+            <option value="Meeting Room">Meeting Room</option>
+            <option value="Garden / Outdoor">Garden / Outdoor</option>
+            <option value="Rooftop">Rooftop</option>
+          </select>
+          <div>
+            <label class="text-xs text-gray-500">Capacity (guests)</label>
+            <input type="number" min="1" [(ngModel)]="hallForm.capacity" class="form-input" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">Rate / hour (LKR)</label>
+            <input type="number" min="0" [(ngModel)]="hallForm.ratePerHour" class="form-input" />
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">Rate / day (LKR, optional)</label>
+            <input type="number" min="0" [(ngModel)]="hallForm.ratePerDay" class="form-input" />
+          </div>
+          <input [(ngModel)]="hallForm.description" placeholder="Description" class="form-input" />
+          <div class="md:col-span-2 flex justify-end gap-2">
+            @if (editingHall) {
+              <button type="button" class="btn-secondary text-xs" (click)="editingHall = null; hallForm = emptyHallForm()">Cancel Edit</button>
+            }
+            <button type="button" class="btn-primary text-xs" (click)="saveHall()">{{ editingHall ? 'Save Hall' : '+ Add Hall' }}</button>
+          </div>
+        </div>
+
+        <div class="space-y-2 max-h-80 overflow-y-auto">
+          @for (h of halls; track h._id) {
+            <div class="flex justify-between items-center p-3 border border-gray-100 rounded-lg">
+              <div>
+                <p class="font-medium text-gray-900">{{ h.name }} <span class="text-xs text-gray-400">({{ h.type }})</span></p>
+                <p class="text-xs text-gray-500">
+                  Capacity {{ h.capacity }} · LKR {{ h.ratePerHour }}/hr
+                  @if (h.ratePerDay) {
+                    <span> · LKR {{ h.ratePerDay }}/day</span>
+                  }
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="text-xs text-serenity-700" (click)="editHall(h)">Edit</button>
+                <button type="button" class="text-xs text-red-600" (click)="deleteHall(h)">Delete</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

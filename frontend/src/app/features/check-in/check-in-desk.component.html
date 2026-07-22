@@ -1,0 +1,149 @@
+<div class="page-shell">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Check-in / Check-out Desk</h2>
+      <p class="text-gray-500 mt-1">Today's arrivals, departures, and in-house guests</p>
+    </div>
+    <div class="flex gap-2">
+      <a routerLink="/bookings" class="btn-secondary text-sm">Bookings</a>
+      @if (canManage) {
+        <button type="button" class="btn-primary text-sm" (click)="openWalkIn()">+ Walk-in</button>
+      }
+      <button type="button" class="btn-secondary text-sm" (click)="loadDesk()">Refresh</button>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="card mb-4 bg-red-50 border-red-200 text-red-700 text-sm">{{ error }}</div>
+  }
+  @if (success) {
+    <div class="card mb-4 bg-green-50 border-green-200 text-green-700 text-sm">{{ success }}</div>
+  }
+
+  @if (loading) {
+    <div class="empty-state text-gray-400"><p>Loading desk...</p></div>
+  } @else {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="card">
+        <h3 class="font-semibold text-gray-900 mb-3">Arrivals ({{ arrivals.length }})</h3>
+        <div class="space-y-3">
+          @for (b of arrivals; track b._id) {
+            <div class="rounded-lg border border-gray-100 p-3">
+              <p class="font-medium text-gray-900">
+                @if (guestId(b); as gid) {
+                  <a [routerLink]="['/guests', gid]" class="hover:underline text-serenity-700">{{ guestName(b) }}</a>
+                } @else {
+                  {{ guestName(b) }}
+                }
+              </p>
+              <p class="text-xs text-gray-500">{{ roomLabel(b) }} · {{ b.checkIn | date: 'HH:mm' }}</p>
+              @if (canManage) {
+                <button type="button" class="mt-2 text-xs btn-primary" (click)="checkIn(b)" [disabled]="actionId === b._id">Check in</button>
+              }
+            </div>
+          } @empty {
+            <p class="text-sm text-gray-400">No arrivals today.</p>
+          }
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="font-semibold text-gray-900 mb-3">Departures ({{ departures.length }})</h3>
+        <div class="space-y-3">
+          @for (b of departures; track b._id) {
+            <div class="rounded-lg border border-gray-100 p-3">
+              <p class="font-medium text-gray-900">{{ guestName(b) }}</p>
+              <p class="text-xs text-gray-500">{{ roomLabel(b) }} · {{ b.checkOut | date: 'HH:mm' }}</p>
+
+              <!-- Balance / Settled indicator -->
+              @if (balance(b) > 0) {
+                <p class="mt-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 inline-block">
+                  Balance: {{ balance(b) | currency: 'LKR ' : 'symbol' : '1.0-0' }}
+                </p>
+              } @else {
+                <span class="mt-1 inline-block text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5">
+                  ✓ Settled
+                </span>
+              }
+
+              @if (canManage) {
+                @if (balance(b) > 0) {
+                  <button
+                    type="button"
+                    class="mt-2 text-xs btn-secondary w-full"
+                    (click)="checkOut(b)"
+                    [disabled]="actionId === b._id"
+                  >💳 Settle &amp; View Folio</button>
+                } @else {
+                  <button
+                    type="button"
+                    class="mt-2 text-xs btn-primary w-full"
+                    (click)="checkOut(b)"
+                    [disabled]="actionId === b._id"
+                  >Check out</button>
+                }
+              }
+            </div>
+          } @empty {
+            <p class="text-sm text-gray-400">No departures today.</p>
+          }
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="font-semibold text-gray-900 mb-3">In-house ({{ inHouse.length }})</h3>
+        <div class="space-y-3 max-h-[28rem] overflow-y-auto">
+          @for (b of inHouse; track b._id) {
+            <div class="rounded-lg border border-gray-100 p-3">
+              <p class="font-medium text-gray-900">
+                {{ guestName(b) }}
+                @if (isLeavingToday(b.checkOut)) {
+                  <span class="leaving-today ml-2">Leaving Today</span>
+                }
+              </p>
+              <p class="text-xs text-gray-500">{{ roomLabel(b) }} · out {{ b.checkOut | date: 'dd MMM, HH:mm' }}</p>
+            </div>
+          } @empty {
+            <p class="text-sm text-gray-400">No guests in-house.</p>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+@if (showWalkIn) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-5 space-y-3">
+      <h3 class="font-semibold text-gray-900">Walk-in Check-in</h3>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" [(ngModel)]="useNewGuest" /> Register new guest
+      </label>
+      @if (useNewGuest) {
+        <div [formGroup]="walkInForm" class="grid grid-cols-2 gap-2">
+          <input formControlName="firstName" placeholder="First name" class="px-3 py-2 rounded-lg border text-sm" />
+          <input formControlName="lastName" placeholder="Last name" class="px-3 py-2 rounded-lg border text-sm" />
+          <input formControlName="email" placeholder="Email" class="px-3 py-2 rounded-lg border text-sm" />
+          <input formControlName="phone" placeholder="Phone" class="px-3 py-2 rounded-lg border text-sm" />
+        </div>
+      } @else {
+        <select [(ngModel)]="walkInGuestId" class="w-full px-3 py-2 rounded-lg border text-sm bg-white">
+          <option value="">Select guest</option>
+          @for (g of guests; track g._id) {
+            <option [value]="g._id">{{ g.firstName }} {{ g.lastName }}</option>
+          }
+        </select>
+      }
+      <select [(ngModel)]="walkInRoomId" class="w-full px-3 py-2 rounded-lg border text-sm bg-white">
+        <option value="">Select available room</option>
+        @for (r of rooms; track r._id) {
+          <option [value]="r._id">{{ r.roomNumber }} · {{ r.type }}</option>
+        }
+      </select>
+      <div class="flex gap-2 justify-end">
+        <button type="button" class="btn-secondary text-sm" (click)="showWalkIn = false">Cancel</button>
+        <button type="button" class="btn-primary text-sm" (click)="submitWalkIn()">Check in now</button>
+      </div>
+    </div>
+  </div>
+}

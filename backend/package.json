@@ -7,14 +7,22 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["hotel", "management", "express", "mongodb"],
+  "keywords": [
+    "hotel",
+    "management",
+    "express",
+    "mongodb"
+  ],
   "author": "AlphaCoders",
   "license": "MIT",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mongoose": "^8.9.3"
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.3",
+    "multer": "^2.2.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

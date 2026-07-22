@@ -24,6 +24,40 @@ export class ApiService {
     return this.http.get<ApiResponse<unknown[]>>(`${this.baseUrl}/rooms`);
   }
 
+  createRoom(payload: unknown): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(`${this.baseUrl}/rooms`, payload);
+  }
+
+  updateRoom(id: string, payload: unknown): Observable<ApiResponse<unknown>> {
+    return this.http.put<ApiResponse<unknown>>(`${this.baseUrl}/rooms/${id}`, payload);
+  }
+
+  deleteRoom(id: string): Observable<ApiResponse<unknown>> {
+    return this.http.delete<ApiResponse<unknown>>(`${this.baseUrl}/rooms/${id}`);
+  }
+
+  getRoomTypes(): Observable<ApiResponse<unknown[]>> {
+    return this.http.get<ApiResponse<unknown[]>>(`${this.baseUrl}/room-types`);
+  }
+
+  createRoomType(payload: unknown): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(`${this.baseUrl}/room-types`, payload);
+  }
+
+  updateRoomType(id: string, payload: unknown): Observable<ApiResponse<unknown>> {
+    return this.http.put<ApiResponse<unknown>>(`${this.baseUrl}/room-types/${id}`, payload);
+  }
+
+  deleteRoomType(id: string): Observable<ApiResponse<unknown>> {
+    return this.http.delete<ApiResponse<unknown>>(`${this.baseUrl}/room-types/${id}`);
+  }
+
+  checkRoomAvailability(checkIn: string, checkOut: string): Observable<ApiResponse<unknown[]>> {
+    return this.http.get<ApiResponse<unknown[]>>(`${this.baseUrl}/bookings/availability`, {
+      params: { checkIn, checkOut }
+    });
+  }
+
   getGuests(): Observable<ApiResponse<unknown[]>> {
     return this.http.get<ApiResponse<unknown[]>>(`${this.baseUrl}/guests`);
   }

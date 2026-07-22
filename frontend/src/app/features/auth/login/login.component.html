@@ -1,0 +1,110 @@
+<!-- Full-screen login page -->
+<div class="min-h-screen bg-gradient-to-br from-serenity-900 via-serenity-800 to-serenity-700 flex items-center justify-center p-4">
+
+  <!-- Card -->
+  <div class="w-full max-w-md">
+
+    <!-- Logo / Branding -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-white bg-opacity-20 rounded-2xl mb-4">
+        <span class="text-3xl">🏨</span>
+      </div>
+      <h1 class="text-3xl font-bold text-white tracking-tight">Serenity Suites</h1>
+      <p class="text-serenity-200 mt-1">Hotel Management System</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">Sign in to your account</h2>
+
+      <!-- Error Alert -->
+      @if (errorMessage) {
+        <div class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
+          <span>⚠️</span>
+          <span>{{ errorMessage }}</span>
+        </div>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+
+        <!-- Email -->
+        <div class="mb-4">
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="you@serenity.com"
+            class="w-full px-4 py-3 rounded-lg border transition-colors duration-200 outline-none focus:ring-2 focus:ring-serenity-500 focus:border-serenity-500"
+            [class.border-red-400]="email.invalid && email.touched"
+            [class.border-gray-300]="!(email.invalid && email.touched)"
+          />
+          @if (email.invalid && email.touched) {
+            <p class="text-red-500 text-xs mt-1">
+              @if (email.errors?.['required']) { Email is required. }
+              @else if (email.errors?.['email']) { Please enter a valid email. }
+            </p>
+          }
+        </div>
+
+        <!-- Password -->
+        <div class="mb-6">
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <div class="relative">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="••••••••"
+              class="w-full px-4 py-3 pr-12 rounded-lg border transition-colors duration-200 outline-none focus:ring-2 focus:ring-serenity-500 focus:border-serenity-500"
+              [class.border-red-400]="password.invalid && password.touched"
+              [class.border-gray-300]="!(password.invalid && password.touched)"
+            />
+            <button
+              type="button"
+              (click)="togglePassword()"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {{ showPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+          @if (password.invalid && password.touched) {
+            <p class="text-red-500 text-xs mt-1">
+              @if (password.errors?.['required']) { Password is required. }
+              @else if (password.errors?.['minlength']) { Password must be at least 6 characters. }
+            </p>
+          }
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          id="login-submit-btn"
+          type="submit"
+          [disabled]="loading"
+          class="w-full btn-primary py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          @if (loading) {
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            Signing in...
+          } @else {
+            Sign In
+          }
+        </button>
+
+      </form>
+      
+      <div class="mt-6 text-center text-sm">
+        <span class="text-gray-500">Don't have an account? </span>
+        <a routerLink="/register" class="font-semibold text-serenity-600 hover:text-serenity-500 cursor-pointer">Sign up here</a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-serenity-300 text-sm mt-6">
+      AlphaCoders &copy; 2026 &mdash; Serenity Suites HMS
+    </p>
+  </div>
+</div>
